@@ -39,3 +39,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# challenge data (download with npm run fetch-data)
+/data/
+
+.vercel
+.env*
+!.env.example
+
+# generated from data/ by npm run build-index
+/src/generated/
