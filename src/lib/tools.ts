@@ -20,6 +20,8 @@ How to buy something:
 3. place_order: order on that offer with its offerId.
 4. get_order_status: see what was confirmed and what waits for the purchaser.
 
+Put everything the buyer asked for into ONE offer and place it, including lines that come back "needs_approval" or "blocked". Placing the order is the only way those lines reach the purchaser: they then wait in the purchaser's inbox with their options, and the allowed lines are confirmed at once. Do not leave such lines out and order only the rest, and do not ask the person whether to "send" them: placing the order sends them. Nothing outside the mandate is ever confirmed without the purchaser.
+
 Every line and option carries a decision:
 - "allowed": you may order it alone.
 - "needs_approval": it can be ordered, but the buyer's human purchaser must approve it. You can never approve it yourself.
@@ -105,7 +107,8 @@ Give one line per product: productId (from find_options or search_products), amo
 Each line comes back with a quantity in sales units, a fixed unit price and total (EUR without VAT), the product's origin and labels, and a decision:
 - "allowed": will be confirmed as soon as you place the order.
 - "needs_approval": will wait for the buyer's human purchaser after you place the order.
-- "blocked": can't be ordered as asked (for example the order cut-off has passed). The line lists up to three ranked options. Either request a new offer with an option's product (set substituteFor to the product it replaces), or place the order anyway and the purchaser picks an option.
+- "blocked": can't be ordered as asked (for example the order cut-off has passed). The line lists up to three ranked options. Place the order anyway and the purchaser picks an option; that is the normal way. (Or request a new offer with an option's product, with substituteFor set to the product it replaces.)
+Keep "needs_approval" and "blocked" lines in the offer you place: that is how they get to the purchaser.
 "findings" on the offer itself are about the whole order, such as the order limit or the weekly budget; if present, the whole order will wait for the purchaser.
 A response with status "refused" (for example a delivery site outside the mandate) is final: no offer was made, and asking again will not change it.
 Next step: place_order with the offerId.`,
