@@ -1,5 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { quote, quoteBasket, roundUpToLot } from "@/lib/quote";
+import { isoTime } from "@/lib/valio";
+import * as fake from "@/lib/valio-fake";
 import { fakeValio } from "@/lib/valio-fake";
 import { MONDAY } from "@/test/setup";
 
@@ -36,6 +38,57 @@ describe("fake Valio data covers the traps", () => {
   it("an unavailable product has an empty schedule", async () => {
     const l = await line("461814", 20, "KG");
     expect(l.problems.map((p) => p.code)).toEqual(["unavailable"]);
+  });
+});
+
+// What the live API turned out to send on Sat 14 Nov 2026. The fake sends the same shapes.
+describe("live API shapes", () => {
+  it("times arrive as +0200 and leave as +02:00, which every browser can read", async () => {
+    const raw = await fake.getAvailability({ customer: "x", requestedDate: MONDAY, products: ["463038"] });
+    expect(raw.timeNow).toBe("2026-11-14T08:00:00+0200");
+    expect(raw.products[0].closingTime).toBe("2026-11-12T15:00:00+0200");
+
+    const res = await quoteBasket({ lines: [{ productId: "463038", amount: 1000, unit: "L" }], deliveryDate: MONDAY });
+    expect(res.retrievedAt).toBe("2026-11-14T08:00:00+02:00");
+    expect(res.lines[0].orderCutoff).toBe("2026-11-12T15:00:00+02:00");
+    expect(isoTime("9999-12-31T00:00:00+0200")).toBe("9999-12-31T00:00:00+02:00");
+    expect(isoTime("2026-11-14T07:39:43.000Z")).toBe("2026-11-14T07:39:43.000Z");
+    expect(isoTime("2026-11-16")).toBe("2026-11-16");
+  });
+
+  it("the cut-off is compared as a moment in time, not as text: 16:59 is open, 17:01 is closed", async () => {
+    vi.setSystemTime(new Date("2026-11-15T14:59:00Z")); // Sun 15 Nov 16:59 in Helsinki
+    expect((await line("472673", 10, "KG")).cutoffPassed).toBe(false);
+    vi.setSystemTime(new Date("2026-11-15T15:01:00Z")); // 17:01 in Helsinki
+    const late = await line("472673", 10, "KG");
+    expect(late.cutoffPassed).toBe(true);
+    expect(late.issues[0]).toBe("Order cut-off for Mon 16 Nov passed on Sun 15 Nov 17:00");
+  });
+
+  it("a product that can't be delivered comes with no cut-off and no logistic model, and is unavailable, not unknown", async () => {
+    const raw = await fake.getAvailability({ customer: "x", requestedDate: MONDAY, products: ["461814"] });
+    expect(raw.products[0]).toEqual({ productId: "461814", salesBlock: false, scheduleLines: [] });
+
+    const l = await line("461814", 20, "KG");
+    expect(l).toMatchObject({ orderCutoff: null, logisticModel: null, cutoffPassed: false, availableOnDate: 0 });
+    expect(l.issues).toEqual(["Not available for delivery on Mon 16 Nov"]);
+  });
+
+  it("unlimited also arrives as 9999999999", async () => {
+    fakeValio.setStock("472673", 9999999999);
+    const l = await line("472673", 225, "KG");
+    expect(l.availableOnDate).toBe(999999);
+    expect(l.deliverable).toBe(true);
+  });
+
+  it("the live schedule is the same whatever date is asked: an earlier date gets nothing, a later one keeps the old cut-off", async () => {
+    fakeValio.fixSchedule(MONDAY);
+    const early = (await quoteBasket({ lines: [{ productId: "472673", amount: 10, unit: "KG" }], deliveryDate: "2026-11-15" })).lines[0];
+    expect(early.issues).toEqual(["Not available for delivery on Sun 15 Nov"]);
+    expect(early.nextAvailableDate).toBe(MONDAY);
+
+    const later = (await quoteBasket({ lines: [{ productId: "463232", amount: 10, unit: "KG" }], deliveryDate: "2026-11-18" })).lines[0];
+    expect(later.issues).toEqual(["Order cut-off for Wed 18 Nov passed on Thu 12 Nov 15:00"]);
   });
 });
 

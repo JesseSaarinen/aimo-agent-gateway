@@ -74,8 +74,42 @@ export type PriceResponse = { customerId: string; currency: string; pricingDate:
 
 export const ping = (): Promise<{ status: string }> => (usingFakeValio() ? fake.ping() : call("/ping"));
 
-export const getAvailability = (req: ProductsRequest): Promise<AvailabilityResponse> =>
-  usingFakeValio() ? fake.getAvailability(req) : call("/availability", req);
+// What the live API sends (seen Sat 14 Nov 2026) and this file tidies before anything else reads it:
+//   - times carry the Helsinki offset without a colon ("2026-11-12T15:00:00+0200"). Node reads that,
+//     Safari does not, and offers pass these strings on to browsers, so they become "+02:00";
+//   - a product that can't be delivered has an empty `scheduleLines` and no `closingTime` or `logisticModel` at all.
 
-export const getPrices = (req: ProductsRequest): Promise<PriceResponse> =>
-  usingFakeValio() ? fake.getPrices(req) : call("/price", req);
+/** "2026-11-12T15:00:00+0200" → "2026-11-12T15:00:00+02:00". Anything else is returned as it is. */
+export const isoTime = <T extends string | null | undefined>(t: T): T => (t ? (t.replace(/([+-]\d{2})(\d{2})$/, "$1:$2") as T) : t);
+
+const tidyPrice = (p: Price | null | undefined): Price | null => (p ? { ...p, validFrom: isoTime(p.validFrom), validTo: isoTime(p.validTo) } : null);
+
+export async function getAvailability(req: ProductsRequest): Promise<AvailabilityResponse> {
+  const res: AvailabilityResponse = await (usingFakeValio() ? fake.getAvailability(req) : call("/availability", req));
+  return {
+    ...res,
+    timeNow: isoTime(res.timeNow),
+    requestedDate: isoTime(res.requestedDate),
+    products: (res.products ?? []).map((p) => ({
+      ...p,
+      closingTime: isoTime(p.closingTime) ?? null,
+      salesBlock: !!p.salesBlock,
+      logisticModel: p.logisticModel ?? null,
+      scheduleLines: p.scheduleLines ?? [],
+    })),
+  };
+}
+
+export async function getPrices(req: ProductsRequest): Promise<PriceResponse> {
+  const res: PriceResponse = await (usingFakeValio() ? fake.getPrices(req) : call("/price", req));
+  return {
+    ...res,
+    pricingDate: isoTime(res.pricingDate),
+    products: (res.products ?? []).map((p) => ({
+      ...p,
+      catalogPrice: tidyPrice(p.catalogPrice),
+      comparisonPrice: tidyPrice(p.comparisonPrice),
+      listPrice: tidyPrice(p.listPrice),
+    })),
+  };
+}

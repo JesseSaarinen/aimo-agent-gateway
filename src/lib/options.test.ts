@@ -89,10 +89,28 @@ describe("options for a named product", () => {
   });
 
   it("never makes more than the capped number of extra Valio calls", async () => {
-    fakeValio.setStock("463232", null); // past cut-off and never in stock: every later date fails
+    fakeValio.setStock("463232", 10); // past cut-off and never enough in stock: every later date fails
     const r = await find({ productId: "463232", amount: 225, unit: "KG" });
     expect(ids(r)).toEqual(["product:472673"]);
     expect(fakeValio.count()).toBe(2 + MAX_LATER_DATE_CALLS);
     expect(fakeValio.calls.slice(2).map((c) => c.requestedDate)).toEqual(["2026-11-18", "2026-11-19", "2026-11-20"]);
+  });
+
+  it("live API: the cut-off does not move with the date, so it asks once, offers no later date and says why", async () => {
+    fakeValio.fixSchedule(MONDAY);
+    const r = await find({ productId: "463232", amount: 225, unit: "KG" });
+    expect(ids(r)).toEqual(["product:472673"]); // the Stock substitute still works
+    expect(fakeValio.count()).toBe(3); // price + availability, and one later-date check, not three
+    expect(r.message).toBe(
+      "1 option for 225 KG on Mon 16 Nov, best first. 107 products checked. " +
+        "No later date can be offered for Atria Chicken Fillet Lightly Salted ca3kg/ca150g: Valio's data gives the same order cut-off (Thu 12 Nov 15:00) for Wed 18 Nov too.",
+    );
+  });
+
+  it("live API: a product with nothing to deliver has no cut-off, so no later date is looked for", async () => {
+    fakeValio.setStock("463232", null);
+    const r = await find({ productId: "463232", amount: 225, unit: "KG" });
+    expect(ids(r)).toEqual(["product:472673"]);
+    expect(fakeValio.count()).toBe(2);
   });
 });

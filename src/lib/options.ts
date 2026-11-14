@@ -375,6 +375,9 @@ export async function buildOptions(mandate: Mandate, needs: Need[], deliveryDate
 
   // 4. Ask, with a hard cap on calls. Every call covers all products still waiting for a date.
   const laterHits = new Map<number, { target: Evaluated; hit: Later }>();
+  // Products whose passed cut-off came back unchanged for a later date. Valio's mock API does this (seen Sat 14 Nov 2026):
+  // it returns the same schedule whatever date is asked, so asking about more dates would only spend calls.
+  const fixedCutoff = new Map<number, string>();
   let waiting = pending.filter((p) => p.guess <= latest);
   let date = waiting.map((p) => p.guess).sort()[0];
   for (let calls = 0; waiting.length && calls < MAX_LATER_DATE_CALLS && date <= latest; date = addDays(date, 1)) {
@@ -386,13 +389,19 @@ export async function buildOptions(mandate: Mandate, needs: Need[], deliveryDate
       const s = supply(p.target.product.id);
       if (s.known && !s.cutoffPassed && !s.salesBlock && s.available >= p.target.quote.salesUnitsNeeded!) {
         laterHits.set(p.i, { target: p.target, hit: { date, orderCutoff: s.orderCutoff } });
+      } else if (s.cutoffPassed && s.orderCutoff && s.orderCutoff === p.target.quote.orderCutoff) {
+        fixedCutoff.set(p.i, `No later date can be offered for ${productName(p.target.product)}: Valio's data gives the same order cut-off (${fmtDateTime(s.orderCutoff)}) for ${fmtDay(date)} too.`);
       }
     }
-    waiting = waiting.filter((p) => !laterHits.has(p.i));
+    waiting = waiting.filter((p) => !laterHits.has(p.i) && !fixedCutoff.has(p.i));
   }
 
   // 5. Rank and word the options
-  const results = judged.map((j, i) => compose(j.need, deliveryDate, j.reference, j.candidates, laterHits.get(i) ?? null, includeReference));
+  const results = judged.map((j, i) => {
+    const r = compose(j.need, deliveryDate, j.reference, j.candidates, laterHits.get(i) ?? null, includeReference);
+    const note = fixedCutoff.get(i);
+    return note ? { ...r, message: `${r.message} ${note}` } : r;
+  });
   return { results, retrievedAt };
 }
 

@@ -2,7 +2,11 @@
 // Used by the tests and by `npm run dev:fake`. Never used in production (see valio.ts).
 // Product codes are real ones from the static catalogue; prices, stock and cut-offs here are made up,
 // loosely following what the live API said on Fri 13 Nov 2026.
-import { addDays, helsinkiOffset } from "./dates";
+// The shapes follow the live API as seen on Sat 14 Nov 2026: times as Helsinki wall time with a colon-less
+// offset ("+0200"), and no closingTime or logisticModel on a product that can't be delivered.
+// One thing differs on purpose: here the cut-off moves with the requested date, as a real order system's would.
+// The live mock API returns the same schedule whatever date is asked; `fakeValio.fixSchedule` copies that.
+import { addDays, helsinkiOffset, TZ } from "./dates";
 import type { ProductAvailability, ProductPrice, ProductsRequest } from "./valio";
 
 export const UNLIMITED = 999999;
@@ -53,19 +57,28 @@ const ROWS: Record<string, Row> = {
 };
 
 type Call = { kind: "price" | "availability"; requestedDate: string; products: string[] };
-type State = { calls: Call[]; stock: Record<string, number | null>; price: Record<string, number | null> };
+type State = { calls: Call[]; stock: Record<string, number | null>; price: Record<string, number | null>; schedule: string | null };
 
 // Kept on globalThis so every route module on the dev server sees the same fake state.
 const g = globalThis as unknown as { __aimoFakeValio?: State };
-const state = (): State => (g.__aimoFakeValio ??= { calls: [], stock: {}, price: {} });
+const state = (): State => (g.__aimoFakeValio ??= { calls: [], stock: {}, price: {}, schedule: null });
 
 const VAT = 13.5;
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
-function closingTime(model: Row["model"], requestedDate: string): string {
+/** The offset the way the live API writes it: "+0200", no colon. */
+const liveOffset = (at: Date) => helsinkiOffset(at).replace(":", "");
+
+/** A moment the way the live API writes it: Helsinki wall time, "2026-11-14T09:39:43+0200". */
+function liveTime(at: Date): string {
+  const wall = new Intl.DateTimeFormat("sv-SE", { timeZone: TZ, dateStyle: "short", timeStyle: "medium" }).format(at).replace(" ", "T");
+  return `${wall}${liveOffset(at)}`;
+}
+
+function closingTime(model: Row["model"], deliveryDate: string): string {
   const [daysBefore, hour] = model === "Terminal" ? [4, "15"] : [1, "17"];
-  const day = addDays(requestedDate, -daysBefore);
-  return `${day}T${hour}:00:00${helsinkiOffset(new Date(`${day}T12:00:00Z`))}`;
+  const day = addDays(deliveryDate, -daysBefore);
+  return `${day}T${hour}:00:00${liveOffset(new Date(`${day}T12:00:00Z`))}`;
 }
 
 const money = (value: number, date: string) => ({
@@ -109,15 +122,18 @@ export async function getAvailability(req: ProductsRequest) {
     const row = ROWS[id];
     if (!row) return { productId: id, closingTime: null, salesBlock: false, logisticModel: null, scheduleLines: [] };
     const stock = id in s.stock ? s.stock[id] : row.stock;
+    // The live API leaves closingTime and logisticModel out altogether when there is nothing to deliver
+    if (stock === null) return { productId: id, salesBlock: false, scheduleLines: [] } as unknown as ProductAvailability;
+    const slot = s.schedule ?? req.requestedDate;
     return {
       productId: id,
-      closingTime: closingTime(row.model, req.requestedDate),
+      closingTime: closingTime(row.model, slot),
       salesBlock: false,
       logisticModel: row.model,
-      scheduleLines: stock === null ? [] : [{ salesBlock: false, availableAmount: stock, availableDate: req.requestedDate, salesUnit: row.unit }],
+      scheduleLines: [{ salesBlock: false, availableAmount: stock, availableDate: slot, salesUnit: row.unit }],
     };
   });
-  return { timeNow: new Date().toISOString(), requestedDate: req.requestedDate, products };
+  return { timeNow: liveTime(new Date()), requestedDate: `${req.requestedDate}T00:00:00${liveOffset(new Date(`${req.requestedDate}T12:00:00Z`))}`, products };
 }
 
 export const ping = async () => ({ status: "ok (fake)" });
@@ -125,7 +141,14 @@ export const ping = async () => ({ status: "ok (fake)" });
 /** Controls for tests: count calls, change stock or a price between two steps. */
 export const fakeValio = {
   reset() {
-    g.__aimoFakeValio = { calls: [], stock: {}, price: {} };
+    g.__aimoFakeValio = { calls: [], stock: {}, price: {}, schedule: null };
+  },
+  /**
+   * Behave like the live mock API: one delivery slot on this date, with its cut-off, whatever date is asked for.
+   * null goes back to a cut-off that moves with the requested date.
+   */
+  fixSchedule(deliveryDate: string | null) {
+    state().schedule = deliveryDate;
   },
   get calls(): Call[] {
     return state().calls;
