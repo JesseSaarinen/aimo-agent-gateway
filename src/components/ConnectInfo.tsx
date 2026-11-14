@@ -23,6 +23,8 @@ const REST: [string, string, string, string][] = [
   ["PATCH", "/api/v1/mandate", "purchaser only", "Change the mandate"],
   ["GET", "/api/v1/audit", "purchaser, Valio Aimo", "The log: who, what, which rule, why"],
   ["GET", "/api/v1/products/search", "anyone", "Search the catalogue. No prices, no stock."],
+  ["POST", "/api/v1/quote", "agent", "Live price and stock for a shortlist of product codes"],
+  ["GET", "/api/v1/openapi.json", "anyone", "This API as an OpenAPI 3.1 document"],
   ["GET", "/.well-known/jwks.json", "anyone", "The public key that verifies offers"],
 ];
 
@@ -113,7 +115,11 @@ export function ConnectInfo() {
         </h2>
         <p className="mt-1 max-w-3xl text-soft">
           Send the key as <code className="font-mono text-xs">Authorization: Bearer …</code>. A refusal comes back with status &quot;refused&quot;, the rule, a
-          one-line reason and the id of its log entry, and it is final.
+          one-line reason and the id of its log entry, and it is final. The whole API is described in an OpenAPI 3.1 document at{" "}
+          <a href="/api/v1/openapi.json" className="font-mono text-xs font-semibold text-teal underline underline-offset-2 hover:text-teal-deep">
+            /api/v1/openapi.json
+          </a>
+          , built from the same schemas the routes check input with.
         </p>
         <div className="max-w-3xl">
           <Code>{`curl -X POST ${origin}/api/v1/options \\

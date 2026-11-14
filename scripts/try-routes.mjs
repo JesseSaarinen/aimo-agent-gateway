@@ -76,6 +76,10 @@ r = await api("GET", "/api/v1/audit?limit=100", KEYS.supplier);
 check("audit (Valio view) shows the unknown-key attempt", r.status === 200 && r.json.entries.some((e) => e.rule === "agent_identity" && e.buyerId === null), `total ${r.json.total}, newest: ${r.json.entries[0]?.action}`);
 r = await api("POST", "/api/v1/offers", KEYS.agent, { deliverySite: "stockholm", deliveryDate: MONDAY, lines: [{ productId: "465039", amount: 10, unit: "L" }] });
 check("offer for a site outside the mandate -> 403 (refused before Valio)", r.status === 403 && r.json.rule === "delivery_site", short(r.json));
+r = await api("POST", "/api/v1/quote", null, { productIds: ["465039"], deliveryDate: MONDAY, amount: 10, unit: "L" });
+check("quote without a key -> 401 (refused before Valio)", r.status === 401 && r.json.rule === "agent_identity", short(r.json));
+r = await api("GET", "/api/v1/openapi.json");
+check("OpenAPI document lists the routes", r.status === 200 && r.json.openapi === "3.1.0" && !!r.json.paths?.["/api/v1/orders/{id}/decisions"]?.post && r.json.servers?.[0]?.url === BASE, `${Object.keys(r.json.paths ?? {}).length} paths, server ${r.json.servers?.[0]?.url}`);
 
 // MCP, without Valio
 r = await mcp("/api/mcp/made_up_key", "tools/list", {});
