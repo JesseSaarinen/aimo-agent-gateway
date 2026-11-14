@@ -80,7 +80,8 @@ export function normaliseUnit(unit: string): string {
 const ITEM_WORDS = new Set(["PIECE", "PIECES", "PCS", "PC", "UNIT", "UNITS", "ITEM", "ITEMS", "BAG", "BAGS", "BOTTLE", "BOTTLES", "PACK", "PACKS", "PACKET", "PACKETS", "CAN", "CANS", "TIN", "TINS", "JAR", "JARS", "CARTON", "CARTONS", "TUB", "TUBS"]);
 const ITEM_UNITS = new Set(["ST", "BAG", "BOT", "PAK", "PRK", "RAS"]);
 /** True when `unit` is an everyday word for one item and the product is sold one item at a time. */
-export const isItemWord = (unit: string, salesUnit: string) => ITEM_WORDS.has(unit) && ITEM_UNITS.has(salesUnit);
+// The same goes for another item code: a model asked for rice in PAK when Valio sells that bag as ST (Sat 14 Nov 2026).
+export const isItemWord = (unit: string, salesUnit: string) => (ITEM_WORDS.has(unit) || ITEM_UNITS.has(unit)) && ITEM_UNITS.has(salesUnit);
 
 /** The data uses 0.01 to mean "no lot rule". Anything bigger is a real lot, e.g. 4.4 kg per bag. */
 export const lotOf = (p: Product | null): number | null => (p && p.lotSize > 0.01 ? p.lotSize : null);

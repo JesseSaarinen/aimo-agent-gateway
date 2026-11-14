@@ -122,7 +122,7 @@ describe("unit conversion and lot rounding", () => {
 
   it("an everyday word for one item means the sales unit when the product is sold by the item", async () => {
     // Rice 472332 is sold by the piece (ST), one 5 kg bag each. A real agent asked for "60 bags" and was refused.
-    for (const unit of ["bags", "BAG", "pieces", "pcs"]) {
+    for (const unit of ["bags", "BAG", "pieces", "pcs", "PAK"]) {
       const l = await line("472332", 60, unit);
       expect(l).toMatchObject({ salesUnit: "ST", salesUnitsNeeded: 60, total: 714, deliverable: true });
     }

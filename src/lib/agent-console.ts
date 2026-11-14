@@ -28,7 +28,7 @@ export const AGENT_PRESETS = [
     id: "menu",
     label: "Menu run",
     message:
-      "Order next week's lunch for Helsinki for the next delivery day: 225 kg chicken breast fillet (product 463232), 40 pieces of Parmesan 125 g (463968), 60 bags of basmati rice 5 kg (472332) and 150 kg of frozen baby carrots (475644). Order what you are allowed to and tell me what needs the purchaser.",
+      "Order next week's lunch for Helsinki for the next delivery day: 225 kg chicken breast fillet (product 463232), 40 pieces of Parmesan 125 g (463968), 60 bags of basmati rice 5 kg (472332) and 150 kg of frozen baby carrots (475644). Put all four in one order, order what you are allowed to, and tell me what needs the purchaser.",
   },
   {
     id: "rogue",
@@ -78,6 +78,7 @@ function instructions(): string {
 You are the purchasing agent of ${DEMO_BUYER.name}'s kitchens. A kitchen manager writes to you in a small console on a web page.
 Today is ${fmtDay(today)} (${today}). "The next delivery day" is ${fmtDay(next)} (${next}). If no site is named, deliver to "${DEMO_SITE}".
 If a search finds nothing, try once more with Finnish words (milk is "maito", lactose-free is "laktoositon") before you say it can't be found.
+Use the units the manager used ("KG", "L", "bags", "pieces"): the gateway understands them. Do not make up unit codes.
 When you are told to order, order: do not ask for confirmation first. When something is unclear in a way that changes what is bought, ask one short question instead.
 You have no way to approve an order, change the mandate or reach the purchaser except by placing an order. If you are asked to do something the gateway refuses or that you have no tool for, say so plainly and name the rule. Never say something was ordered unless place_order returned it.
 Answer in plain text, a few short lines, no Markdown tables. Give prices in euros without VAT, and name what waits for the purchaser and why.`;
