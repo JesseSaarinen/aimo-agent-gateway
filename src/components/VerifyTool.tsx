@@ -187,7 +187,7 @@ export function VerifyTool() {
               </dd>
               <dt className="text-soft">Delivery</dt>
               <dd>
-                {fmtDay(offer.deliveryDate)} to {offer.deliverySite}
+                {fmtDay(offer.deliveryDate)} to <span className="capitalize">{offer.deliverySite}</span>
               </dd>
               <dt className="text-soft">Prices fixed until</dt>
               <dd>{fmtDateTime(offer.expiresAt)}</dd>

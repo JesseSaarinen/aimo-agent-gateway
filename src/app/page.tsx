@@ -17,7 +17,16 @@ export default function Home() {
         <RunConsole />
       </div>
 
-      <div className="mt-12 grid gap-x-10 gap-y-6 border-t border-line pt-8 md:grid-cols-3">
+      <div className="mt-12 grid gap-x-10 gap-y-6 border-t border-line pt-8 sm:grid-cols-2 lg:grid-cols-4">
+        <div>
+          <h2 className="font-bold">Ask a real agent</h2>
+          <p className="mt-1 text-soft">
+            The runs above are scripted calls. On the next page a language model does the buying with the same six tools, and you can ask it to cheat.
+          </p>
+          <Link href="/agent" className="mt-2 inline-block font-semibold text-teal underline underline-offset-2 hover:text-teal-deep">
+            Open the live agent
+          </Link>
+        </div>
         <div>
           <h2 className="font-bold">Be the purchaser</h2>
           <p className="mt-1 text-soft">

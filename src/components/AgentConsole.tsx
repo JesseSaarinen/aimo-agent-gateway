@@ -11,6 +11,13 @@ type Preset = { id: string; label: string; message: string };
 type Call = { id: string; name: string; title: string; input: unknown; result: Extract<AgentEvent, { kind: "result" }> | null };
 type Item = { kind: "said"; text: string } | { kind: "call"; call: Call };
 
+/** A model's Markdown habits as plain text: "* item" becomes "• item", and ** and ` marks are dropped. */
+const plain = (text: string) =>
+  text
+    .replace(/^[ \t]*[*-][ \t]+/gm, "• ")
+    .replace(/\*\*/g, "")
+    .replace(/`/g, "");
+
 const OUTCOME = {
   answered: { label: "Answered", tone: "ink" },
   refused: { label: "Refused", tone: "stop" },
@@ -150,7 +157,7 @@ export function AgentConsole() {
               item.kind === "said" ? (
                 <li key={i} className="border-b border-line bg-paper px-4 py-4 last:border-0">
                   <p className="text-sm text-soft">Agent{model ? ` (${model.split("/")[1]})` : ""}</p>
-                  <p className="mt-1 whitespace-pre-wrap text-[15px] leading-relaxed">{item.text}</p>
+                  <p className="mt-1 whitespace-pre-wrap text-[15px] leading-relaxed">{plain(item.text)}</p>
                 </li>
               ) : (
                 <li key={i} className="grid gap-x-5 gap-y-2 border-b border-line px-4 py-4 last:border-0 sm:grid-cols-[1fr_auto]">

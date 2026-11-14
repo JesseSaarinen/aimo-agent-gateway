@@ -87,7 +87,7 @@ export function OrderDocket({
       <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2 border-b border-line px-4 py-3">
         <div>
           <h3 className="font-bold">
-            Delivery {fmtDay(order.deliveryDate)} to {order.deliverySite}
+            Delivery {fmtDay(order.deliveryDate)} to <span className="capitalize">{order.deliverySite}</span>
           </h3>
           <p className="text-sm text-soft">
             Placed {fmtDateTime(order.placedAt)} by {order.agentId}
