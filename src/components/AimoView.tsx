@@ -38,14 +38,14 @@ export function AimoView() {
 
   return (
     <>
-      <h1 className="text-3xl font-extrabold tracking-tight">Valio Aimo&apos;s view</h1>
+      <h1 className="text-3xl font-extrabold sm:text-4xl">Valio Aimo&apos;s view</h1>
       <p className="mt-1 max-w-3xl text-soft">
         What the supplier sees: every order that came through the gateway and every call it turned away. Read-only. This view can&apos;t approve an order
         or change a buyer&apos;s mandate.
       </p>
 
-      <dl className="mt-6 grid max-w-2xl grid-cols-3 gap-4">
-        <div>
+      <dl className="mt-6 grid max-w-2xl grid-cols-2 gap-4 sm:grid-cols-3">
+        <div className="col-span-2 sm:col-span-1">
           <dt className="text-sm text-soft">Confirmed orders</dt>
           <dd className="text-2xl font-extrabold">{money(confirmed)}</dd>
         </div>

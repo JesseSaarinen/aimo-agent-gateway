@@ -81,7 +81,7 @@ function MandatePanel({ view, onSaved }: { view: MandateView; onSaved: () => voi
           </p>
         )}
       </form>
-      <ol className="list-decimal space-y-1.5 border-b border-line py-3 pl-9 pr-4 text-sm">
+      <ol className="list-decimal space-y-1.5 border-b border-line py-3 pl-9 pr-4 text-sm marker:[font-variant-numeric:normal]">
         {view.rules.map((r, i) => (
           <li key={i}>{r}</li>
         ))}
@@ -128,7 +128,7 @@ export function PurchaserDesk() {
     <>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Purchaser&apos;s desk</h1>
+          <h1 className="text-3xl font-extrabold sm:text-4xl">Purchaser&apos;s desk</h1>
           <p className="mt-1 text-soft">
             {data.mandate.buyer.name}. You are signed in as the demo purchaser; a real buyer would use their own login.
           </p>

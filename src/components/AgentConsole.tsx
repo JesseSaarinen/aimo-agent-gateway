@@ -92,7 +92,7 @@ export function AgentConsole() {
   return (
     <section aria-label="Live agent">
       <div className="max-w-3xl">
-        <h1 className="text-3xl font-extrabold tracking-tight">Ask a real agent</h1>
+        <h1 className="text-3xl font-extrabold sm:text-4xl">Ask a real agent</h1>
         <p className="mt-2 text-lg leading-relaxed text-soft">
           This is a language model working as the kitchen&apos;s buying agent. It holds one agent key and the gateway&apos;s six tools, the same ones your own
           agent gets over MCP. Nobody scripted what it does. Everything it calls and everything the gateway answers is shown below, and lands in the same
@@ -165,7 +165,7 @@ export function AgentConsole() {
                     <h3 className="font-bold">
                       {item.call.title} <span className="font-mono text-xs font-normal text-soft">{item.call.name}</span>
                     </h3>
-                    <p className="mt-1.5 overflow-x-auto whitespace-nowrap font-mono text-xs text-soft">{JSON.stringify(item.call.input)}</p>
+                    <p className="mt-1.5 overflow-x-auto whitespace-nowrap pb-1.5 font-mono text-xs text-soft">{JSON.stringify(item.call.input)}</p>
                     {item.call.result && (
                       <p className={`mt-1.5 text-[15px] ${item.call.result.outcome === "refused" ? "font-medium" : ""}`}>
                         <span className="text-soft">Gateway:</span> {item.call.result.says}

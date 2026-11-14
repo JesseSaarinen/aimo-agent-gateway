@@ -5,7 +5,7 @@ export default function Home() {
   return (
     <>
       <div className="max-w-3xl">
-        <h1 className="text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl">Any agent can ask. Only the mandate can buy.</h1>
+        <h1 className="text-4xl font-extrabold leading-[1.05] sm:text-5xl">Any agent can ask. Only the mandate can buy.</h1>
         <p className="mt-4 text-lg leading-relaxed text-soft">
           This is Valio Aimo&apos;s door for buying agents. A hotel chain gives its agent a mandate: how much it may spend, where it may deliver, what the
           food must be. The gateway checks every order against that mandate on Valio Aimo&apos;s side, signs every price it promises, and sends the

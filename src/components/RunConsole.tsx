@@ -43,7 +43,7 @@ function StepRow({ step }: { step: Step }) {
           </p>
         )}
         {step.call && (
-          <p className="mt-1.5 overflow-x-auto whitespace-nowrap font-mono text-xs text-soft">
+          <p className="mt-1.5 overflow-x-auto whitespace-nowrap pb-1.5 font-mono text-xs text-soft">
             {step.call.method} {step.call.path}
             {step.call.body !== undefined ? ` ${JSON.stringify(step.call.body)}` : ""}
           </p>
@@ -149,7 +149,7 @@ export function RunConsole() {
   return (
     <section aria-label="Demo runs">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="grid flex-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid flex-1 basis-full gap-2 sm:grid-cols-2 lg:basis-0 lg:grid-cols-5">
           {ORDER.map((id) => {
             const r = info?.runs[id];
             const danger = id === "break-it";
@@ -159,7 +159,7 @@ export function RunConsole() {
                 type="button"
                 disabled={!info || running !== null}
                 onClick={() => run(id)}
-                className={`rounded border px-3 py-3 text-left disabled:cursor-not-allowed disabled:opacity-60 ${
+                className={`flex flex-col justify-start rounded border px-3 py-3 text-left disabled:cursor-not-allowed disabled:opacity-60 ${
                   danger ? "border-stop bg-sheet hover:bg-stop-bg" : "border-line bg-sheet hover:border-teal"
                 } ${running === id ? "ring-2 ring-teal" : ""}`}
               >
@@ -217,14 +217,14 @@ export function RunConsole() {
               )}
             </div>
             {breakIt && (
-              <ol aria-label="Attacks stopped" className="flex gap-1.5">
+              <ol aria-label="Attacks stopped" className="flex gap-1 sm:gap-1.5">
                 {Array.from({ length: 8 }, (_, i) => {
                   const a = attacks.find((x) => x.number === i + 1);
                   return (
                     <li
                       key={i}
                       title={a ? `${a.title}: ${a.stopped ? "stopped" : "got through"}` : `Attack ${i + 1}`}
-                      className={`grid h-9 w-9 place-items-center rounded-sm border-2 text-sm font-extrabold ${
+                      className={`grid h-7 w-7 place-items-center rounded-sm border-2 text-xs font-extrabold sm:h-9 sm:w-9 sm:text-sm ${
                         a ? (a.stopped ? "stamp-land border-stop bg-stop-bg text-stop" : "border-ink bg-ink text-white") : "border-line text-line"
                       }`}
                     >

@@ -68,7 +68,7 @@ export function ConnectInfo() {
 
   return (
     <>
-      <h1 className="text-3xl font-extrabold tracking-tight">Connect an agent</h1>
+      <h1 className="text-3xl font-extrabold sm:text-4xl">Connect an agent</h1>
       <p className="mt-1 max-w-3xl text-soft">
         The gateway speaks MCP and plain REST, with the same six tools behind both. The key below belongs to the demo agent of {info.buyer.name}. It can
         search, get offers and order inside the mandate. It can never approve an order or change the mandate.

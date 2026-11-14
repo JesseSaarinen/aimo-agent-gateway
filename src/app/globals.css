@@ -47,6 +47,12 @@ h1 {
   border-radius: 2px;
 }
 
+/* Scrolling inside a box (a long API call, a wide table): a thin bar instead of the browser's thick one. */
+.overflow-x-auto {
+  scrollbar-width: thin;
+  scrollbar-color: #b3c2c8 transparent;
+}
+
 :focus-visible {
   outline: 2px solid var(--color-teal);
   outline-offset: 2px;

@@ -105,7 +105,7 @@ export function VerifyTool() {
 
   return (
     <>
-      <h1 className="text-3xl font-extrabold tracking-tight">Verify an offer</h1>
+      <h1 className="text-3xl font-extrabold sm:text-4xl">Verify an offer</h1>
       <p className="mt-1 max-w-3xl text-soft">
         Every offer the gateway makes is signed with its private key (Ed25519). Prices, quantities, origin and label claims are all inside the signature.
         Paste an offer below, or get one from a demo run, then change a single character.
