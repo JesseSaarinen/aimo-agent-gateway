@@ -5,13 +5,13 @@ The plan, judging criteria and API/data findings are in `../valio-aimo.md`. Read
 
 @AGENTS.md
 
-## Status (Sat 14 Nov 10:00)
+## Status (Sat 14 Nov 10:10)
 
 Built: the order engine (offers, mandate, signing, orders, approvals, audit log, REST, MCP) and the pages (demo runs with the break-it run, purchaser's desk, Valio Aimo's view, verify, connect).
-Live: https://aimo-agent-gateway.vercel.app runs this code on the live Valio API and the Neon database (deployed Sat 14 Nov 09:55; `/api/health` says `postgres (production)`).
-Checked on the live site on Sat 14 Nov: milk run confirmed with no human, break-it run 8 of 8 stopped, menu run with both purchaser decisions, `/aimo`, `/verify`, `/connect`, and MCP (initialize, tools/list, one tool call). The demo data was reset afterwards.
+Live: https://aimo-agent-gateway.vercel.app runs this code on the live Valio API and the Neon database (last deployed Sat 14 Nov 10:06; `/api/health` says `postgres (production)`).
+Checked on the live site on Sat 14 Nov: milk run confirmed with no human, break-it run 8 of 8 stopped, menu run with both purchaser decisions, `/aimo`, `/verify`, `/connect`, and MCP (initialize, tools/list, one tool call). After the second deploy (10:06): the 25 scripted calls that never reach Valio, the milk run, the break-it run and the menu run again. The demo data was reset afterwards.
 Committed locally on `master`. Nothing is pushed: the repo has no remote.
-Not built: the in-app agent console with a language model (the scripted runs page is the plan's own fallback for it), and an OpenAPI document.
+Not built: the in-app agent console with a language model. The scripted runs page is the plan's own fallback for it.
 Not tested: a real agent (Claude Desktop or Claude Code) on the MCP address. Only scripted MCP calls have run.
 
 ## What the live Valio API does (seen Sat 14 Nov)
@@ -21,7 +21,7 @@ Not tested: a real agent (Claude Desktop or Claude Code) on the MCP address. Onl
 - Unlimited stock arrives as 999999 or 9999999999.
 - **The schedule does not depend on `requestedDate`.** Every date gets the same answer: one delivery slot on Mon 16 Nov, Terminal products closed Thu 12 Nov (15:00, some 12:00), Stock products close Sun 15 Nov 17:00. So the later-date option never appears on live data, and **after Sun 15 Nov 17:00 every product is past its cut-off and every run is refused**, unless the mock data changes.
 - No rate-limit headers and no 429 in about 80 calls, with up to 107 products in one call.
-- "Same type" means the same category code, and categories are broad: on live stock the options for diced tomato are cabbage, and for salmon other fish.
+- Category codes are broad product groups: one code holds diced tomato and shredded cabbage, another salmon and saithe. So the gateway treats only a substitute Valio lists as like-for-like. A product that merely shares the category is offered as "same product group" and always needs the purchaser.
 
 ## Where things are
 
@@ -37,7 +37,7 @@ Data and Valio:
 The order engine (`src/lib/`):
 - `rules.ts`: the name of every rule the gateway can cite, `Decision` (allowed, needs_approval, blocked), `Finding`, and `Refusal` (a final "no" with rule, reason and audit id)
 - `agents.ts`: the demo buyer (Lumikello Hotels, made up), its sites, and the four demo keys: two agents, the purchaser, Valio Aimo's read-only view. `requireCaller` and `requireRole` refuse and log.
-- `mandate.ts`: the six mandate rules as check functions, the seeded mandate, `updateMandate` (purchaser only)
+- `mandate.ts`: the six mandate rules as check functions, the seeded mandate, `updateMandate` (purchaser only). Rule 4: a listed substitute of the same brand passes alone, another brand asks, a product that only shares the category always asks, another category is never allowed.
 - `options.ts`: `find_options` and the three options on an exception line. Ranking, split, later date, and the caps on Valio calls.
 - `offers.ts`: `requestOffer` builds a multi-line offer at fixed prices (30 min) with per-line decision, findings, options and product claims
 - `signing.ts`: Ed25519 signing and verifying of offers with `jose`. Key from `OFFER_SIGNING_KEY`, or generated at start-up outside production.
@@ -46,10 +46,11 @@ The order engine (`src/lib/`):
 - `audit.ts`: the audit log. `store.ts`: the only storage (get, put, putIfAbsent, list, clear). Postgres (Neon, one JSONB table `aimo_docs`, rows kept apart per environment) when `DATABASE_URL` is set, memory otherwise and always on fake data.
 - `rule-names.ts`: the rule names alone, with no imports, so pages can use them. `demo.ts`: what the demo runs ask for (milk request, menu basket, the over-the-limit amount, the dead-end product, default delivery date). Tuned on live data on Sat 14 Nov.
 - `tools.ts`: the six agent tools defined once (name, description, zod schema, handler), plus the MCP server instructions. REST and MCP both run these.
+- `openapi.ts`: the REST API as an OpenAPI 3.1 document, built from `schemas.ts` and the tool texts. `openapi.test.ts` fails when a route under `src/app/api/v1` is missing from it.
 - `schemas.ts`: zod input schemas. `http.ts`: key from the request (bearer key, or the demo sign-in cookie plus an `X-Demo-Role` header) and refusal → HTTP status. `dates.ts`: Helsinki dates and the budget week.
 
 Routes (`src/app/`):
-- `api/v1/products/search` (GET), `api/v1/quote` (POST): the first two endpoints, no key needed. `/quote` calls Valio.
+- `api/v1/products/search` (GET, no key, never calls Valio), `api/v1/quote` (POST, agent key, two Valio calls), `api/v1/openapi.json` (GET, public)
 - `api/v1/options` (POST), `api/v1/offers` (POST), `api/v1/offers/[id]` (GET), `api/v1/offers/verify` (POST, public)
 - `api/v1/orders` (POST, GET), `api/v1/orders/[id]` (GET), `api/v1/orders/[id]/decisions` (POST, purchaser only)
 - `api/v1/mandate` (GET, PATCH by the purchaser), `api/v1/audit` (GET, purchaser and Valio Aimo)
@@ -73,7 +74,7 @@ Tests (`npm test`, all on fake data): `src/lib/*.test.ts`. `attacks.test.ts` is 
 - Database locally: `vercel env pull .env.vercel --environment=development` writes `DATABASE_URL` into a gitignored file that Next.js does not load by itself. `npm run dev:db` passes it on. `node --env-file=.env.vercel scripts/check-store.mjs` runs 10 checks of the store against the real database in a throw-away namespace.
 - Demo data check: `node scripts/check-demo-data.mjs https://aimo-agent-gateway.vercel.app` (4 Valio calls). Says READY when the milk run works and the menu basket has lines that pass and lines that stop.
 - Checks: `npm test`, `npm run lint`, `npx tsc --noEmit`, `npm run build`
-- `scripts/try-routes.mjs`: 41 scripted calls over REST and MCP against a running dev server. Run the full flow only on the fake server (3301), freshly started: a second run trips the weekly budget, as it should. `--no-valio` runs the 23 calls that never reach Valio.
+- `scripts/try-routes.mjs`: 43 scripted calls over REST and MCP against a running server. Run the full flow only on the fake server (3301), freshly started: a second run trips the weekly budget, as it should. `--no-valio` runs the 25 calls that never reach Valio and is safe against the live URL.
 - The pages have no login: "signed in as the demo purchaser" is a cookie anyone can get. That stands in for a real login and is said on the page.
 - Demo orders add up: after about 15,000 € of confirmed orders in a week, every new order waits for approval. Use "Reset demo data" on the purchaser's desk, or raise the weekly budget, before a demo run.
 - Live: https://aimo-agent-gateway.vercel.app (Vercel project `aimo-agent-gateway`). `vercel deploy --prod --yes`.
@@ -93,4 +94,5 @@ Tests (`npm test`, all on fake data): `src/lib/*.test.ts`. `attacks.test.ts` is 
 - Next.js refuses `node --env-file=…` in front of `next dev` ("not allowed in NODE_OPTIONS"): pass extra variables through a launcher script like `scripts/dev-db.mjs`.
 - Adding a product to `valio-fake.ts` can change what the milk search finds in the tests, because the search runs on the real catalogue and the fake only supplies prices and stock.
 - A number field with `min` and `step` only accepts min + n × step: the limit field uses `step="any"` for that reason.
+- The pages load and poll only while their tab is visible (`usePoll` in `src/components/client.ts`): in a hidden browser tab `/purchaser` and `/aimo` stay on "Loading…". Check the API instead, or bring the tab to the front.
 - A GET route must read the request headers outside any try/catch (see `withCaller` in `http.ts`), or the build logs a prerender error.
