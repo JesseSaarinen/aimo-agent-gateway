@@ -34,6 +34,15 @@ const button = "rounded border px-3 py-1.5 text-sm font-semibold disabled:cursor
 const primary = `${button} border-lime bg-lime text-teal-deep hover:bg-lime-deep font-bold`;
 const quiet = `${button} border-line bg-sheet text-ink hover:border-ink`;
 
+const RELATION: Record<Option["relation"], string> = {
+  requested: "The product that was asked for",
+  listed_substitute: "Substitute listed by Valio Aimo",
+  same_group_same_brand: "Same product group, same brand",
+  same_group_other_brand: "Same product group, another brand",
+  other_type: "Another product type",
+  search_match: "Matches the search",
+};
+
 function OptionRow({ option, onTake, busy }: { option: Option; onTake?: () => void; busy: boolean }) {
   return (
     <li className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 border-t border-line py-2.5 first:border-0">
@@ -41,12 +50,20 @@ function OptionRow({ option, onTake, busy }: { option: Option; onTake?: () => vo
         <p className="font-medium">
           Option {option.rank}: {option.parts.map((p) => `${qty(p.quantity, p.salesUnit)} of ${p.name}`).join(" + ")}
         </p>
-        <p className="text-sm text-soft">{option.reason}</p>
-        {option.findings.map((f, i) => (
-          <p key={i} className="text-sm text-wait">
-            {RULES[f.rule]}: {f.reason}
-          </p>
-        ))}
+        {/* One short line says how close the option is. The full reason and the rules are one click away. */}
+        <details className="text-sm text-soft">
+          <summary className="cursor-pointer">
+            {option.kind === "split" ? "Split delivery · " : option.kind === "later_date" ? "Later date · " : ""}
+            {RELATION[option.relation]}
+            {option.pricePerUnit !== null ? ` · ${money(option.pricePerUnit)}/${option.unit}` : ""}
+          </summary>
+          <p className="mt-1">{option.reason}</p>
+          {option.findings.map((f, i) => (
+            <p key={i} className="text-wait">
+              {RULES[f.rule]}: {f.reason}
+            </p>
+          ))}
+        </details>
       </div>
       <div className="flex items-center gap-3">
         <span className="font-semibold">{money(option.total)}</span>

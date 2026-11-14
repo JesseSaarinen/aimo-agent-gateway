@@ -7,6 +7,7 @@ import type { Step } from "@/app/api/demo/runs/script";
 import { fmtDateTime, fmtDay } from "@/lib/dates";
 import type { RunId } from "@/lib/demo";
 import { api, TONE, type Tone } from "./client";
+import { Chip } from "./OrderDocket";
 
 type Start = { kind: "start"; run: RunId; title: string; ask: string; deliveryDate: string };
 type Info = {
@@ -42,12 +43,20 @@ function StepRow({ step }: { step: Step }) {
             <span className="text-soft">{step.actor}:</span> {step.does}
           </p>
         )}
-        {step.call && (
-          <p className="mt-1.5 overflow-x-auto whitespace-nowrap pb-1.5 font-mono text-xs text-soft">
-            {step.call.method} {step.call.path}
-            {step.call.body !== undefined ? ` ${JSON.stringify(step.call.body)}` : ""}
-          </p>
-        )}
+        {step.call &&
+          (step.call.body !== undefined ? (
+            // The request body is one click away, so the answer is what the eye lands on
+            <details className="mt-1.5 font-mono text-xs text-soft">
+              <summary className="cursor-pointer">
+                {step.call.method} {step.call.path}
+              </summary>
+              <p className="mt-1 break-all">{JSON.stringify(step.call.body)}</p>
+            </details>
+          ) : (
+            <p className="mt-1.5 font-mono text-xs text-soft">
+              {step.call.method} {step.call.path}
+            </p>
+          ))}
         <p className={`mt-1.5 text-[15px] ${attack || step.verdict === "blocked" ? "font-medium" : ""}`}>
           <span className="text-soft">Gateway:</span> {step.says}
         </p>
@@ -66,7 +75,19 @@ function StepRow({ step }: { step: Step }) {
             {step.details.map((d, i) => (
               <div key={i} className="contents">
                 <dt className="text-soft">{d.label}</dt>
-                <dd>{d.value}</dd>
+                {d.tag ? (
+                  <dd className="flex gap-2">
+                    <span className="w-28 shrink-0">
+                      <Chip tone={d.tag.tone}>{d.tag.label}</Chip>
+                    </span>
+                    <span>
+                      {d.value}
+                      {d.note && <span className={`block ${d.tag.tone === "stop" ? "text-stop" : "text-wait"}`}>{d.note}</span>}
+                    </span>
+                  </dd>
+                ) : (
+                  <dd>{d.value}</dd>
+                )}
               </div>
             ))}
           </dl>

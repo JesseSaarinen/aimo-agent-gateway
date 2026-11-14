@@ -38,7 +38,8 @@ export type Step = {
   /** the words on the stamp, when the verdict's usual words don't fit */
   stamp?: string;
   links?: { label: string; href: string }[];
-  details?: { label: string; value: string }[];
+  /** tag: a coloured word in front of the value; note: the reason, on its own line under it */
+  details?: { label: string; value: string; tag?: { label: string; tone: "go" | "wait" | "stop" }; note?: string }[];
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- JSON bodies from the gateway's own routes
@@ -93,6 +94,12 @@ const refusedWith = (r: Reply, rule: string) => r.status >= 400 && r.json?.statu
 
 const lineText = (l: Offer["lines"][number]) =>
   `${l.requested.amount} ${l.requested.unit} of ${l.name ?? l.productId}` + (l.quantity !== null ? ` = ${l.quantity} ${l.salesUnit}${l.total !== null ? `, ${eur(l.total)}` : ""}` : "");
+
+const DECISION_TAG = {
+  allowed: { label: "Allowed", tone: "go" },
+  needs_approval: { label: "Needs approval", tone: "wait" },
+  blocked: { label: "Blocked", tone: "stop" },
+} as const;
 
 const optionText = (o: Option) => `${o.rank}. ${o.parts.map((p) => `${p.quantity} ${p.salesUnit} of ${p.name}`).join(" + ")}, ${eur(o.total)} (${o.decision.replace("_", " ")})`;
 
@@ -196,7 +203,9 @@ async function* menuRun(deliveryDate: string): AsyncGenerator<Step> {
     says: `Offer ${offer.id}, ${eur(offer.total)}: ${offered.json.summary.allowed} lines can be ordered alone, ${offered.json.summary.needsApproval} need the purchaser, ${offered.json.summary.blocked} can't be ordered as asked.`,
     details: offer.lines.map((l, i) => ({
       label: `${MENU.lines[i].ingredient} (${MENU.lines[i].assumption})`,
-      value: `${lineText(l)}: ${l.decision.replace("_", " ")}${l.findings.length ? `, ${l.findings[0].reason}` : ""}`,
+      value: lineText(l),
+      tag: DECISION_TAG[l.decision],
+      note: l.findings[0]?.reason,
     })),
     links: [{ label: "Check this offer's signature", href: `/verify?offer=${offer.id}` }],
   });
@@ -213,7 +222,7 @@ async function* menuRun(deliveryDate: string): AsyncGenerator<Step> {
     says: order.message,
     details: open.map((l: { line: number; name: string; findings: { reason: string }[]; options: Option[] }) => ({
       label: `Line ${l.line} waits`,
-      value: `${l.findings[0]?.reason ?? ""}${l.options.length ? `. Options: ${l.options.map(optionText).join("; ")}` : ". No option could be offered."}`,
+      value: `${l.findings[0]?.reason ?? ""}. ${l.options.length ? `${l.options.length} ranked option${l.options.length === 1 ? "" : "s"} for the purchaser.` : "No option could be offered."}`,
     })),
   });
 
