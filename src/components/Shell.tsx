@@ -7,6 +7,7 @@ import { api } from "./client";
 
 const NAV = [
   { href: "/", label: "Demo runs" },
+  { href: "/agent", label: "Live agent" },
   { href: "/purchaser", label: "Purchaser" },
   { href: "/aimo", label: "Valio Aimo's view" },
   { href: "/verify", label: "Verify an offer" },

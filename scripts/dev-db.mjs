@@ -4,22 +4,29 @@
 import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 
-let url;
-try {
-  const line = readFileSync(".env.vercel", "utf8").split(/\r?\n/).find((l) => l.startsWith("DATABASE_URL="));
-  url = line?.slice("DATABASE_URL=".length).replace(/^"|"$/g, "");
-} catch {
-  // handled below
+/** One variable from .env.vercel, or undefined. Never printed. */
+function pulled(name) {
+  try {
+    const line = readFileSync(".env.vercel", "utf8").split(/\r?\n/).find((l) => l.startsWith(`${name}=`));
+    return line?.slice(name.length + 1).replace(/^"|"$/g, "") || undefined;
+  } catch {
+    return undefined;
+  }
 }
+
+const url = pulled("DATABASE_URL");
 if (!url) {
   console.error("No DATABASE_URL in .env.vercel. Run: vercel env pull .env.vercel --environment=development");
   process.exit(1);
 }
+// The in-app agent reaches the AI Gateway with this token. The one in .env.vercel is fresher than any in .env.local,
+// and it runs out after some hours: pull again when the agent console says it can't sign in.
+const oidc = pulled("VERCEL_OIDC_TOKEN");
 
 const args = process.argv.slice(2).filter((a) => /^[\w.:-]+$/.test(a)); // flags and numbers only
 const child = spawn(`npx next dev ${args.join(" ")}`, {
   stdio: "inherit",
   shell: true,
-  env: { ...process.env, DATABASE_URL: url },
+  env: { ...process.env, DATABASE_URL: url, ...(oidc ? { VERCEL_OIDC_TOKEN: oidc } : {}) },
 });
 child.on("exit", (code) => process.exit(code ?? 0));

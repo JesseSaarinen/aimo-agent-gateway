@@ -19,6 +19,7 @@
   "dependencies": {
     "@modelcontextprotocol/server": "^2.4.0",
     "@neondatabase/serverless": "^1.2.1",
+    "ai": "^7.0.173",
     "jose": "^6.2.17",
     "mcp-handler": "^2.4.0",
     "next": "16.4.6",
