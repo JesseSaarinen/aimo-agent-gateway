@@ -21,6 +21,13 @@ describe("find_options from search words", () => {
     expect(fakeValio.count()).toBe(2); // one price call, one availability call
   });
 
+  // A model searched for "lactose-free milk" on Sat 14 Nov and was told nothing matches
+  it("search words may be hyphenated English: lactose-free milk finds the same milk", async () => {
+    const r = await find({ query: "lactose-free milk", amount: 1000, unit: "L" });
+    expect(ids(r)).toContain("product:464306");
+    expect(r.options[0].decision).toBe("allowed");
+  });
+
   it("says so when the search finds nothing", async () => {
     const r = await find({ query: "yksisarvisen maito", amount: 10, unit: "L" });
     expect(r.possible).toBe(false);

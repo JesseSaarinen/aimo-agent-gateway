@@ -163,7 +163,8 @@ export type SearchHit = {
 };
 
 export function searchProducts({ query, requirements = [], includeUnknown = true, limit = 20 }: SearchInput) {
-  const terms = norm(query).split(/\s+/).filter((t) => t.length > 1);
+  // Words are split at anything that is not a letter or a digit, so "lactose-free milk" finds "milk ... lactose free"
+  const terms = norm(query).split(/[^\p{L}\p{N}]+/u).filter((t) => t.length > 1);
   const hits: SearchHit[] = [];
   for (const p of products) {
     const text = haystack.get(p.id)!;
