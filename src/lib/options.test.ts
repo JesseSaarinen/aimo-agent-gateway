@@ -13,9 +13,9 @@ const ids = (r: Awaited<ReturnType<typeof find>>) => r.options.map((o) => `${o.k
 describe("find_options from search words", () => {
   it("milk run: 1,000 l lactose-free milk for Monday gets Stock products, cheapest per litre first", async () => {
     const r = await find({ query: "maito laktoositon", amount: 1000, unit: "litres" });
-    expect(ids(r)).toEqual(["product:464398", "product:465039"]);
-    expect(r.options[0]).toMatchObject({ rank: 1, decision: "allowed", pricePerUnit: 1.62, total: 1620, relation: "search_match" });
-    expect(r.options[1].parts[0]).toMatchObject({ quantity: 200, salesUnit: "KI", covers: 1000, deliveryDate: MONDAY });
+    expect(ids(r)).toEqual(["product:464306", "product:464398", "product:465039"]);
+    expect(r.options[0]).toMatchObject({ rank: 1, decision: "allowed", pricePerUnit: 1.01, total: 1010, relation: "search_match" });
+    expect(r.options[2].parts[0]).toMatchObject({ quantity: 200, salesUnit: "KI", covers: 1000, deliveryDate: MONDAY });
     // The Terminal products are named with the reason, not silently dropped
     expect(r.notOffered.find((n) => n.productId === "463038")?.reason).toBe("Order cut-off for Mon 16 Nov passed on Thu 12 Nov 15:00");
     expect(fakeValio.count()).toBe(2); // one price call, one availability call

@@ -75,10 +75,10 @@ describe("scripted runs for the demo buyer", () => {
       ["Order: confirmed with no human", "confirmed", 200],
       ["Done: ordered inside the mandate", "confirmed", null],
     ]);
-    expect(steps[1].says).toContain("1000 L of Valio Eila");
-    expect(steps[1].says).toContain("= 1000 ST, 1,620.00 €");
+    expect(steps[1].says).toContain("1000 L of Valio Hyvä suomalainen Arki® Eila®");
+    expect(steps[1].says).toContain("= 1000 ST, 1,010.00 €");
     const [order] = await listOrders(who("purchaser"));
-    expect(order).toMatchObject({ status: "confirmed", agentId: "agent-kitchen", totals: { confirmed: 1620 } });
+    expect(order).toMatchObject({ status: "confirmed", agentId: "agent-kitchen", totals: { confirmed: 1010 } });
   });
 
   it("menu run: five lines go through, two wait for the purchaser", async () => {
@@ -98,8 +98,9 @@ describe("scripted runs for the demo buyer", () => {
     expect((await collect("big")).at(-1)).toMatchObject({ verdict: "confirmed" });
   });
 
-  it("salmon: says nothing can be delivered", async () => {
-    const steps = await collect("salmon");
+  it("where it breaks: says nothing can be delivered", async () => {
+    fakeValio.fixSchedule(MONDAY); // like the live API: a later date does not move the cut-off
+    const steps = await collect("dead-end");
     expect(steps[0]).toMatchObject({ verdict: "blocked" });
     expect(steps[0].says).toContain("The gateway does not guess a replacement");
     expect(steps.at(-1)!.title).toBe("The gateway says no, and does not guess");

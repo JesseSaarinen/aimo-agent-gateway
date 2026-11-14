@@ -12,7 +12,7 @@ const schema = z.object({
 const g = globalThis as unknown as { __aimoRunBusy?: boolean; __aimoRunLast?: number };
 const PAUSE_MS = 2000;
 
-// POST /api/demo/runs  {run: "milk" | "menu" | "big" | "salmon" | "break-it", deliveryDate?}
+// POST /api/demo/runs  {run: "milk" | "menu" | "big" | "dead-end" | "break-it", deliveryDate?}
 // Runs a scripted demo and streams its steps as they finish, one JSON object per line.
 // No language model is involved: the steps are fixed calls to the gateway's own REST API.
 export async function POST(req: Request) {

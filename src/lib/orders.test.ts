@@ -20,11 +20,11 @@ describe("milk run: 1,000 l lactose-free milk by Monday", () => {
     // 1. The agent asks what can be delivered
     const found = await findOptions(await getMandate(DEMO_MANDATE_ID), { query: "maito laktoositon", amount: 1000, unit: "L", deliveryDate: MONDAY, requirements: ["lactose_free"] });
     const best = found.options[0];
-    expect(best).toMatchObject({ decision: "allowed", parts: [{ productId: "464398", quantity: 1000, salesUnit: "ST" }] });
+    expect(best).toMatchObject({ decision: "allowed", parts: [{ productId: "464306", quantity: 1000, salesUnit: "ST" }] });
 
     // 2. It asks for a signed offer on the best option
     const { offer } = await offerFor([{ productId: best.parts[0].productId, amount: 1000, unit: "L" }]);
-    expect(offer).toMatchObject({ decision: "allowed", total: 1620 });
+    expect(offer).toMatchObject({ decision: "allowed", total: 1010 });
 
     // 3. It orders. Inside the mandate and in stock, so nobody has to approve.
     const placed = await placeOrder(agent(), { offerId: offer.id });
@@ -33,16 +33,16 @@ describe("milk run: 1,000 l lactose-free milk by Monday", () => {
       status: "confirmed",
       deliveryDate: MONDAY,
       deliverySite: "helsinki",
-      totals: { confirmed: 1620, awaitingApproval: 0 },
+      totals: { confirmed: 1010, awaitingApproval: 0 },
       summary: { confirmed: 1, awaitingApproval: 0, blocked: 0, rejected: 0 },
     });
     expect(placed.order.lines[0]).toMatchObject({
       status: "confirmed",
       open: false,
-      fulfilment: [{ productId: "464398", quantity: 1000, unitPrice: 1.62, total: 1620, deliveryDate: MONDAY }],
+      fulfilment: [{ productId: "464306", quantity: 1000, unitPrice: 1.01, total: 1010, deliveryDate: MONDAY }],
       resolution: { action: "confirmed_alone", by: { role: "gateway" } },
     });
-    expect(placed.order.message).toBe(`Order ${placed.order.id} for Mon 16 Nov to helsinki: 1 line confirmed (1,620.00 €).`);
+    expect(placed.order.message).toBe(`Order ${placed.order.id} for Mon 16 Nov to helsinki: 1 line confirmed (1,010.00 €).`);
 
     // Search (2 calls), offer (2), stock check at order time (1)
     expect(fakeValio.count()).toBe(5);

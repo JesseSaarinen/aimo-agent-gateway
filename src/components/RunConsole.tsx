@@ -11,7 +11,7 @@ import { api, TONE, type Tone } from "./client";
 type Start = { kind: "start"; run: RunId; title: string; ask: string; deliveryDate: string };
 type Info = { runs: Record<RunId, { title: string; ask: string; human: boolean }>; defaultDeliveryDate: string };
 
-const ORDER: RunId[] = ["milk", "menu", "big", "salmon", "break-it"];
+const ORDER: RunId[] = ["milk", "menu", "big", "dead-end", "break-it"];
 
 const VERDICT: Record<Step["verdict"], { label: string; tone: Tone }> = {
   ok: { label: "Answered", tone: "ink" },

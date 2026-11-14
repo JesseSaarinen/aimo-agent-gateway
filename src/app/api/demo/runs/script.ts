@@ -12,7 +12,7 @@ import * as ordersRoute from "@/app/api/v1/orders/route";
 import { demoKeys, sandboxKey } from "@/lib/agents";
 import type { AuditEntry } from "@/lib/audit";
 import { fmtDay } from "@/lib/dates";
-import { BIG_MILK_AMOUNT, DEMO_SITE, MENU, MILK_REQUEST, SALMON_REQUEST, type RunId } from "@/lib/demo";
+import { BIG_MILK_AMOUNT, DEMO_SITE, MENU, MILK_REQUEST, DEAD_END_REQUEST, type RunId } from "@/lib/demo";
 import { eur } from "@/lib/mandate";
 import type { Offer } from "@/lib/offers";
 import type { Option } from "@/lib/options";
@@ -229,13 +229,13 @@ async function* menuRun(deliveryDate: string): AsyncGenerator<Step> {
   });
 }
 
-async function* salmonRun(deliveryDate: string): AsyncGenerator<Step> {
-  const found = await gateway("POST", "/api/v1/options", demoKeys().agent, { ...SALMON_REQUEST, deliveryDate });
+async function* deadEndRun(deliveryDate: string): AsyncGenerator<Step> {
+  const found = await gateway("POST", "/api/v1/options", demoKeys().agent, { ...DEAD_END_REQUEST, deliveryDate });
   if (found.status !== 200) return yield failed("Could not look for options", found, found.json.reason ?? "The gateway did not answer.");
   yield step("step", found, {
     title: "Ask for something that can't be delivered",
     actor: "Kitchen agent",
-    does: `It asks for ${SALMON_REQUEST.amount} kg of ${found.json.reference?.name ?? "salmon fillet"} by ${fmtDay(deliveryDate)}.`,
+    does: `It asks for ${DEAD_END_REQUEST.amount} boxes of ${found.json.reference?.name ?? "grated carrot"} by ${fmtDay(deliveryDate)}.`,
     verdict: found.json.possible ? "ok" : "blocked",
     says: found.json.message,
     details: (found.json.notOffered ?? []).slice(0, 4).map((n: { name: string; reason: string }) => ({ label: "Not offered", value: `${n.name}: ${n.reason}` })),
@@ -247,7 +247,7 @@ async function* salmonRun(deliveryDate: string): AsyncGenerator<Step> {
     verdict: found.json.possible ? "ok" : "blocked",
     says: found.json.possible
       ? "Stock has changed since this run was written: there is an option now."
-      : "No substitute is listed and nothing of the same type is in stock, so the agent is told exactly that. It is not handed some other fish.",
+      : "The listed substitute can't be delivered and nothing of the same type makes the date, so the agent is told exactly that. It is not handed some other vegetable.",
   });
 }
 
@@ -389,8 +389,8 @@ export function runScript(run: RunId, deliveryDate: string): AsyncGenerator<Step
       return milkRun(deliveryDate, BIG_MILK_AMOUNT);
     case "menu":
       return menuRun(deliveryDate);
-    case "salmon":
-      return salmonRun(deliveryDate);
+    case "dead-end":
+      return deadEndRun(deliveryDate);
     case "break-it":
       return breakItRun(deliveryDate);
   }

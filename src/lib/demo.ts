@@ -18,11 +18,14 @@ export const DEMO_SITE = "helsinki";
 /** The brief's own example: "1,000 l lactose-free milk by Monday". */
 export const MILK_REQUEST = { query: "maito laktoositon", amount: 1000, unit: "L", requirements: ["lactose_free"] as Requirement[] };
 
-/** Big enough to cross the seeded 5,000 EUR order limit, for the raise-the-limit moment. */
-export const BIG_MILK_AMOUNT = 4000;
+/** Big enough to cross the seeded 5,000 EUR order limit, for the raise-the-limit moment: about 6,060 EUR at the live 1.01 EUR per litre. */
+export const BIG_MILK_AMOUNT = 6000;
 
-/** "Where it breaks": salmon fillet, unavailable and with no substitute in the catalogue. */
-export const SALMON_REQUEST = { productId: "461814", amount: 40, unit: "KG" };
+/**
+ * "Where it breaks": grated carrot in 10 kg boxes. On live data (Sat 14 Nov 2026) it is past its cut-off, its listed
+ * substitute is not in stock, and nothing else of its type makes the date. Salmon was the first pick, but other fish is in stock.
+ */
+export const DEAD_END_REQUEST = { productId: "474984", amount: 12, unit: "KI" };
 
 /**
  * The menu run's draft basket: weekly lunch for 5 hotels, about 1,500 portions.
@@ -51,7 +54,7 @@ export const RUNS = {
   milk: { title: "Milk run", ask: "1,000 l of lactose-free milk by the delivery date", human: false },
   menu: { title: "Menu run", ask: `${MENU.title}: ${MENU.dish.toLowerCase()}`, human: true },
   big: { title: "Order over the limit", ask: `${BIG_MILK_AMOUNT.toLocaleString("en-US")} l of lactose-free milk, more than one order may cost`, human: true },
-  salmon: { title: "Where it breaks", ask: "40 kg of salmon fillet, which is not in stock and has no substitute", human: false },
+  "dead-end": { title: "Where it breaks", ask: "12 boxes of grated carrot, past its cut-off and with no substitute that makes the date", human: false },
   "break-it": { title: "Break-it run", ask: "A rogue agent tries eight ways around the rules", human: false },
 } as const;
 export type RunId = keyof typeof RUNS;

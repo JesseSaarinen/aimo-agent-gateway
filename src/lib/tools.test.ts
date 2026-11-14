@@ -28,14 +28,14 @@ describe("agent tools", () => {
     const productId = found.options[0].parts[0].productId;
 
     const offered = await call("request_offer", { deliverySite: "helsinki", deliveryDate: MONDAY, lines: [{ productId, amount: 1000, unit: "L" }] });
-    expect(offered).toMatchObject({ decision: "allowed", total: 1620, validMinutes: 30, summary: { allowed: 1 } });
+    expect(offered).toMatchObject({ decision: "allowed", total: 1010, validMinutes: 30, summary: { allowed: 1 } });
     expect(offered.signature.token).toBeUndefined(); // only on request: it is a long string an agent doesn't need
     expect(offered.next).toContain(`place_order with offerId "${offered.offerId}"`);
 
     expect(await call("verify_offer", { offerId: offered.offerId })).toMatchObject({ valid: true, alreadyOrdered: null });
 
     const placed = await call("place_order", { offerId: offered.offerId });
-    expect(placed).toMatchObject({ replayed: false, order: { status: "confirmed", totals: { confirmed: 1620 } } });
+    expect(placed).toMatchObject({ replayed: false, order: { status: "confirmed", totals: { confirmed: 1010 } } });
 
     expect(await call("verify_offer", { offerId: offered.offerId })).toMatchObject({ valid: true, alreadyOrdered: placed.order.id });
     expect(await call("get_order_status", { orderId: placed.order.id })).toMatchObject({ status: "confirmed", summary: { confirmed: 1 } });
