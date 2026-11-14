@@ -5,13 +5,13 @@ The plan, judging criteria and API/data findings are in `../valio-aimo.md`. Read
 
 @AGENTS.md
 
-## Status (Sat 14 Nov 11:30)
+## Status (Sat 14 Nov 12:00)
 
 Built: the order engine (offers, mandate, signing, orders, approvals, audit log, REST, MCP) and the pages (demo runs with the break-it run, purchaser's desk, Valio Aimo's view, verify, connect).
-Live: https://aimo-agent-gateway.vercel.app runs this code on the live Valio API and the Neon database (last deployed Sat 14 Nov 11:24; `/api/health` says `postgres (production)`).
+Live: https://aimo-agent-gateway.vercel.app runs this code on the live Valio API and the Neon database (last deployed Sat 14 Nov 11:50; `/api/health` says `postgres (production)`).
 Checked on the live site on Sat 14 Nov: milk run confirmed with no human, break-it run 8 of 8 stopped, menu run with both purchaser decisions, `/aimo`, `/verify`, `/connect`, and MCP (initialize, tools/list, one tool call). After the second deploy (10:06): the 25 scripted calls that never reach Valio, the milk run, the break-it run and the menu run again. The demo data was reset afterwards.
 Committed locally on `master`. Nothing is pushed: the repo has no remote.
-The in-app agent console is live at `/agent` (built Sat 14 Nov): a language model with the demo agent's key and the six tools. On the live site it ordered the milk and had a Stockholm order refused; the menu request was run locally only. It runs on `google/gemini-2.5-flash`, because the AI Gateway's free tier allows no Claude model. With paid credits on the Vercel team, set `AGENT_MODEL` (for example `anthropic/claude-sonnet-5.5`) on Vercel and redeploy.
+The in-app agent console is live at `/agent` (built Sat 14 Nov): a language model with the demo agent's key and the six tools. On the live site it ordered the milk, had a Stockholm order refused and placed the four-line menu order (two lines confirmed, two for the purchaser). Raise-the-limit was clicked through on the live site the same day: limit saved as mandate version 2, then the 6,060 EUR order confirmed alone. It runs on `google/gemini-2.5-flash`, because the AI Gateway's free tier allows no Claude model. **The free tier also allows the team only 5 model calls a minute**: a run takes 3 or 4, so a second run inside the same minute can fail with a "wait a minute" message. With paid credits on the Vercel team, set `AGENT_MODEL` (for example `anthropic/claude-sonnet-5.5`) on Vercel and redeploy.
 A real agent has run it: on Sat 14 Nov Jesse ordered the milk and a three-line menu from Claude Desktop over MCP, decided the two open lines on the purchaser's desk, and the agent reported the result. What that showed is fixed in commits `6f53cab` and `4eea2ba` (keep exception lines in the placed offer, property verdicts with their source, name-based ranking, everyday unit words). Claude Desktop reads the tool texts when the connector is added: remove and re-add it after changing them.
 
 ## What the live Valio API does (seen Sat 14 Nov)
