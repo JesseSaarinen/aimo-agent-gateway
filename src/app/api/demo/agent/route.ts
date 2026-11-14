@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AGENT_PRESETS, MAX_RUNS_PER_DAY, runAgent, takeRunSlot, type AgentEvent } from "@/lib/agent-console";
+import { AGENT_PRESETS, MAX_RUNS_PER_DAY, plainError, runAgent, takeRunSlot, type AgentEvent } from "@/lib/agent-console";
 import { errorResponse, readJson } from "@/lib/http";
 
 const schema = z.object({ message: z.string().trim().min(3).max(600) });
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
         for await (const event of runAgent(message)) send(event);
       } catch (e) {
         console.error(e);
-        send({ kind: "error", says: `The agent stopped: ${String((e as Error)?.message ?? e)}` });
+        send({ kind: "error", says: plainError(e) });
       } finally {
         g.__aimoAgentBusy = false;
         controller.close();

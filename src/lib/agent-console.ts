@@ -79,6 +79,7 @@ You are the purchasing agent of ${DEMO_BUYER.name}'s kitchens. A kitchen manager
 Today is ${fmtDay(today)} (${today}). "The next delivery day" is ${fmtDay(next)} (${next}). If no site is named, deliver to "${DEMO_SITE}".
 If a search finds nothing, try once more with Finnish words (milk is "maito", lactose-free is "laktoositon") before you say it can't be found.
 Use the units the manager used ("KG", "L", "bags", "pieces"): the gateway understands them. Do not make up unit codes.
+Work in as few steps as you can. When the manager gives product codes, do not look each one up first: call request_offer once with every line, then place_order. The offer already tells you what is allowed, what needs the purchaser and what the options are. Do not write anything between tool calls; write once, at the end.
 When you are told to order, order: do not ask for confirmation first. When something is unclear in a way that changes what is bought, ask one short question instead.
 You have no way to approve an order, change the mandate or reach the purchaser except by placing an order. If you are asked to do something the gateway refuses or that you have no tool for, say so plainly and name the rule. Never say something was ordered unless place_order returned it.
 Answer in plain text, a few short lines, no Markdown tables. Give prices in euros without VAT, and name what waits for the purchaser and why.`;
@@ -108,6 +109,15 @@ function summarise(name: string, output: unknown): Pick<Extract<AgentEvent, { ki
     default:
       return { ...none, says: "Answered." };
   }
+}
+
+/** A model or gateway error as one sentence a visitor can act on. */
+export function plainError(error: unknown): string {
+  const text = String((error as Error)?.message ?? error);
+  if (/rate limit/i.test(text)) {
+    return "The model's rate limit was reached: this demo runs on a free model tier that allows five model calls a minute. Wait a minute and ask again. Nothing was ordered beyond what the steps above show.";
+  }
+  return `The agent stopped: ${text.replace(/https?:\/\/\S+/g, "").slice(0, 300)}`;
 }
 
 /** Count this run against today's ceiling. False when the ceiling is reached. */
@@ -145,7 +155,7 @@ export async function* runAgent(message: string): AsyncGenerator<AgentEvent> {
         steps++;
         break;
       case "error":
-        yield { kind: "error", says: String((part.error as Error)?.message ?? part.error) };
+        yield { kind: "error", says: plainError(part.error) };
         break;
     }
   }
