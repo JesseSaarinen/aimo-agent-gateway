@@ -74,6 +74,14 @@ export function normaliseUnit(unit: string): string {
   return UNIT_ALIASES[u] ?? u;
 }
 
+// Everyday words for one item of a product. People and agents say "60 bags of rice" for a product Valio sells by the
+// piece (ST). When the product is sold one item at a time, such a word means the sales unit. It never means a box (KI)
+// or a pallet: those hold several items, so a wrong guess would multiply the order.
+const ITEM_WORDS = new Set(["PIECE", "PIECES", "PCS", "PC", "UNIT", "UNITS", "ITEM", "ITEMS", "BAG", "BAGS", "BOTTLE", "BOTTLES", "PACK", "PACKS", "PACKET", "PACKETS", "CAN", "CANS", "TIN", "TINS", "JAR", "JARS", "CARTON", "CARTONS", "TUB", "TUBS"]);
+const ITEM_UNITS = new Set(["ST", "BAG", "BOT", "PAK", "PRK", "RAS"]);
+/** True when `unit` is an everyday word for one item and the product is sold one item at a time. */
+export const isItemWord = (unit: string, salesUnit: string) => ITEM_WORDS.has(unit) && ITEM_UNITS.has(salesUnit);
+
 /** The data uses 0.01 to mean "no lot rule". Anything bigger is a real lot, e.g. 4.4 kg per bag. */
 export const lotOf = (p: Product | null): number | null => (p && p.lotSize > 0.01 ? p.lotSize : null);
 
@@ -88,6 +96,7 @@ const roundDownToLot = (units: number, lot: number | null) => (lot ? round3(Math
 /** How much of `unit` one sales unit of the product holds. null = the data can't tell. */
 export function contentPerSalesUnit(p: Product, salesUnit: string, unit: string, price?: ProductPrice): number | null {
   if (unit === salesUnit) return 1;
+  if (isItemWord(unit, salesUnit) && !p.units.some((x) => x.unit === unit)) return 1;
   const unitPrice = price?.catalogPrice?.value;
   const comparison = price?.comparisonPrice?.value;
   if (unitPrice && comparison && price?.comparisonUnit?.toUpperCase() === unit) {

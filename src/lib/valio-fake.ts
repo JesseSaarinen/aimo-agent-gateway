@@ -11,7 +11,7 @@ import type { ProductAvailability, ProductPrice, ProductsRequest } from "./valio
 
 export const UNLIMITED = 999999;
 
-type Row = {
+export type Row = {
   unit: string; // sales unit
   price: number | null; // EUR per sales unit, excl. VAT. null = the API has no price
   per?: [number, string]; // comparison price, e.g. [1.57, "L"]
@@ -59,11 +59,11 @@ const ROWS: Record<string, Row> = {
 };
 
 type Call = { kind: "price" | "availability"; requestedDate: string; products: string[] };
-type State = { calls: Call[]; stock: Record<string, number | null>; price: Record<string, number | null>; schedule: string | null };
+type State = { calls: Call[]; stock: Record<string, number | null>; price: Record<string, number | null>; schedule: string | null; extra: Record<string, Row> };
 
 // Kept on globalThis so every route module on the dev server sees the same fake state.
 const g = globalThis as unknown as { __aimoFakeValio?: State };
-const state = (): State => (g.__aimoFakeValio ??= { calls: [], stock: {}, price: {}, schedule: null });
+const state = (): State => (g.__aimoFakeValio ??= { calls: [], stock: {}, price: {}, schedule: null, extra: {} });
 
 const VAT = 13.5;
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -95,7 +95,7 @@ export async function getPrices(req: ProductsRequest) {
   const s = state();
   s.calls.push({ kind: "price", requestedDate: req.requestedDate, products: [...req.products] });
   const products: ProductPrice[] = req.products.map((id) => {
-    const row = ROWS[id];
+    const row = ROWS[id] ?? s.extra[id];
     const value = id in s.price ? s.price[id] : (row?.price ?? null);
     if (!row || value === null) {
       return { productId: id, quantity: 1, catalogPrice: null, comparisonPrice: null, comparisonUnit: null, listPrice: null, tax: null, netPriceFound: false, error: true };
@@ -121,7 +121,7 @@ export async function getAvailability(req: ProductsRequest) {
   const s = state();
   s.calls.push({ kind: "availability", requestedDate: req.requestedDate, products: [...req.products] });
   const products: ProductAvailability[] = req.products.map((id) => {
-    const row = ROWS[id];
+    const row = ROWS[id] ?? s.extra[id];
     if (!row) return { productId: id, closingTime: null, salesBlock: false, logisticModel: null, scheduleLines: [] };
     const stock = id in s.stock ? s.stock[id] : row.stock;
     // The live API leaves closingTime and logisticModel out altogether when there is nothing to deliver
@@ -143,7 +143,7 @@ export const ping = async () => ({ status: "ok (fake)" });
 /** Controls for tests: count calls, change stock or a price between two steps. */
 export const fakeValio = {
   reset() {
-    g.__aimoFakeValio = { calls: [], stock: {}, price: {}, schedule: null };
+    g.__aimoFakeValio = { calls: [], stock: {}, price: {}, schedule: null, extra: {} };
   },
   /**
    * Behave like the live mock API: one delivery slot on this date, with its cut-off, whatever date is asked for.
@@ -163,6 +163,10 @@ export const fakeValio = {
   },
   setPrice(productId: string, value: number | null) {
     state().price[productId] = value;
+  },
+  /** Give a product price and stock for one test, without changing what the other tests see. */
+  addProduct(productId: string, row: Row) {
+    state().extra[productId] = row;
   },
   has: (productId: string) => productId in ROWS,
 };

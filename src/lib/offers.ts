@@ -39,6 +39,8 @@ export type OfferLine = {
     nutritionClaims: string[];
     allergenDataKnown: boolean;
     requirements: Record<string, Verdict>;
+    /** The same verdicts as sentences that say where each comes from. */
+    requirementNotes: string[];
   };
   supply: { logisticModel: string | null; orderCutoff: string | null; cutoffPassed: boolean; availableOnDate: number; deliveryReliability: number | null };
   decision: Decision;
@@ -109,7 +111,7 @@ export async function requestOffer(caller: Caller, input: OfferRequest) {
     const q = quoted.lines[i];
     const p = getProduct(req.productId);
     const original = req.substituteFor ? getProduct(req.substituteFor) : null;
-    const props = p ? checkProperties(mandate, p, requirements) : { requirements: {}, findings: [] };
+    const props = p ? checkProperties(mandate, p, requirements) : { requirements: {}, notes: [], findings: [] };
     const findings: Finding[] = [
       ...supplyFindings(q.problems),
       ...props.findings,
@@ -137,6 +139,7 @@ export async function requestOffer(caller: Caller, input: OfferRequest) {
         nutritionClaims: p?.claims ?? [],
         allergenDataKnown: p?.allergenDataKnown ?? false,
         requirements: props.requirements,
+        requirementNotes: props.notes,
       },
       supply: {
         logisticModel: q.logisticModel,

@@ -13,7 +13,7 @@ const unitField = z
   .string()
   .min(1)
   .max(12)
-  .describe("Unit of the amount: 'L' (litres), 'KG', or a sales unit code of the product such as 'ST' (piece), 'KI' (box), 'PAK', 'BAG', 'BOT', 'RAS'. The gateway converts to sales units and rounds up.");
+  .describe("Unit of the amount: 'L' (litres), 'KG', or a sales unit code of the product such as 'ST' (piece), 'KI' (box), 'PAK', 'BAG', 'BOT', 'RAS'. The gateway converts to sales units and rounds up. Everyday words for one item ('bags', 'pieces', 'bottles') are accepted for products sold by the item, not for products sold by the box or by weight.");
 const dateField = z.iso.date().describe("Delivery date, YYYY-MM-DD");
 const productIdField = z.string().min(1).max(20);
 

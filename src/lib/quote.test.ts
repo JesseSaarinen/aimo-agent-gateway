@@ -120,6 +120,21 @@ describe("unit conversion and lot rounding", () => {
     expect(roundUpToLot(12.2, null)).toBe(13);
   });
 
+  it("an everyday word for one item means the sales unit when the product is sold by the item", async () => {
+    // Rice 472332 is sold by the piece (ST), one 5 kg bag each. A real agent asked for "60 bags" and was refused.
+    for (const unit of ["bags", "BAG", "pieces", "pcs"]) {
+      const l = await line("472332", 60, unit);
+      expect(l).toMatchObject({ salesUnit: "ST", salesUnitsNeeded: 60, total: 714, deliverable: true });
+    }
+    expect((await line("462080", 30, "bottles")).salesUnitsNeeded).toBe(30); // vinaigrette, sold by the bottle (BOT)
+  });
+
+  it("an everyday word is not guessed for a product sold by the box or by weight", async () => {
+    // Eila 1 l is sold by the box of 5 (KI): "100 cartons" could mean 100 boxes or 100 litres, so the gateway asks
+    expect((await line("465039", 100, "cartons")).problems.map((p) => p.code)).toEqual(["unit_conversion"]);
+    expect((await line("472673", 100, "pieces")).problems.map((p) => p.code)).toEqual(["unit_conversion"]); // chicken, sold by the kg
+  });
+
   it("a unit the data can't convert is a problem, not a guess", async () => {
     const l = await line("463968", 5, "L");
     expect(l.salesUnitsNeeded).toBeNull();

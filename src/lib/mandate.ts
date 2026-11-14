@@ -11,7 +11,7 @@
 //   6. Order cut-off passed                        -> blocked (the offer lists alternatives)
 import { actorOf, DEMO_BUYER, DEMO_MANDATE_ID, getBuyer, requireRole, type Caller } from "./agents";
 import { audit } from "./audit";
-import { checkRequirement, productName, REQUIREMENTS, type Product, type Requirement, type Verdict } from "./catalog";
+import { checkRequirement, productName, requirementNote, REQUIREMENTS, type Product, type Requirement, type Verdict } from "./catalog";
 import { addDays, fmtDay } from "./dates";
 import type { Problem } from "./quote";
 import { Refusal, type Decision, type Finding, type RuleId } from "./rules";
@@ -139,11 +139,13 @@ export function checkDelivery(m: Mandate, site: string, date: string, today: str
 const ALLERGEN_REQUIREMENTS: Requirement[] = ["lactose_free", "gluten_free", "milk_free", "egg_free", "nut_free", "fish_free", "soy_free"];
 
 // Rules 3 and 5. `extra` are properties the agent asked for on top of the mandate's own.
-export function checkProperties(m: Mandate, p: Product, extra: Requirement[] = []): { requirements: Record<string, Verdict>; findings: Finding[] } {
+export function checkProperties(m: Mandate, p: Product, extra: Requirement[] = []): { requirements: Record<string, Verdict>; notes: string[]; findings: Finding[] } {
   const requirements: Record<string, Verdict> = {};
+  const notes: string[] = [];
   const findings: Finding[] = [];
   for (const r of new Set([...m.requiredProperties, ...extra])) {
     const verdict = (requirements[r] = checkRequirement(p, r));
+    notes.push(requirementNote(p, r));
     if (verdict === "no") {
       findings.push({ rule: "required_properties", decision: "blocked", reason: `${productName(p)} does not meet "${REQUIREMENTS[r]}" according to the product data` });
     } else if (verdict === "unknown") {
@@ -154,7 +156,7 @@ export function checkProperties(m: Mandate, p: Product, extra: Requirement[] = [
       );
     }
   }
-  return { requirements, findings };
+  return { requirements, notes, findings };
 }
 
 // Rule 4

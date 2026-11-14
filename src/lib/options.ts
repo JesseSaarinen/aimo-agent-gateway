@@ -3,11 +3,12 @@
 //   1. a substitute Valio Aimo itself lists for the product
 //   2. the same product group and brand
 //   3. the same product group, another brand
+//   within 2 and 3 the closer product name first (a breast fillet before a thigh for a fillet),
 //   then the lower price per unit, and delivery reliability breaks ties.
 // Only 1 can pass without a person: 2 and 3 share a category code, which is no proof that the product fits.
 // A split (what is in stock, the rest from the best substitute) and the same product on its first possible
 // later date are added when they apply. If nothing can be delivered, the answer says so. It never guesses.
-import { getProduct, productName, productsInCategory, REQUIREMENTS, searchProducts, type Product, type Requirement } from "./catalog";
+import { getProduct, productName, productsInCategory, REQUIREMENTS, searchProducts, type Product, type Requirement, type Verdict } from "./catalog";
 import { addDays, fmtDateTime, fmtDay, helsinkiDate, startOfDay } from "./dates";
 import { checkProperties, checkSubstitution, eur, relationOf, type Mandate } from "./mandate";
 import { checkSupply, normaliseUnit, quantityFor, quoteBasket, round2, round3, UNLIMITED, type BasketLine, type QuoteLine } from "./quote";
@@ -33,6 +34,9 @@ export type OptionPart = {
   origin: string | null;
   labels: string[];
   allergenDataKnown: boolean;
+  /** The required properties (the mandate's and the request's), each as a verdict and as a sentence with its source. */
+  requirements: Record<string, Verdict>;
+  requirementNotes: string[];
 };
 
 export type Relation = "requested" | "listed_substitute" | "same_group_same_brand" | "same_group_other_brand" | "other_type" | "search_match";
@@ -75,7 +79,10 @@ type Evaluated = {
   quote: QuoteLine;
   relation: Relation;
   tier: number;
+  /** 0 to 1: how much of the asked-for product's name this product shares. Only set when there is a reference. */
+  closeness: number;
   findings: Finding[]; // from the mandate
+  properties: { requirements: Record<string, Verdict>; notes: string[] };
   decision: Decision;
   pricePerUnit: number | null;
   full: boolean; // can deliver the whole amount on the date
@@ -101,8 +108,9 @@ function evaluate(mandate: Mandate, need: Need, product: Product, quote: QuoteLi
           : rel.sameBrand
             ? "same_group_same_brand"
             : "same_group_other_brand";
+  const properties = checkProperties(mandate, product, need.requirements);
   const findings = [
-    ...checkProperties(mandate, product, need.requirements).findings,
+    ...properties.findings,
     ...(need.reference && !isReference ? checkSubstitution(mandate, need.reference, product) : []),
   ];
   const decision = worst(findings);
@@ -114,7 +122,9 @@ function evaluate(mandate: Mandate, need: Need, product: Product, quote: QuoteLi
     quote,
     relation,
     tier: TIER[relation],
+    closeness: 0,
     findings,
+    properties: { requirements: properties.requirements, notes: properties.notes },
     decision,
     pricePerUnit: priced ? round2(quote.pricePerSalesUnit! / quote.contentPerSalesUnit!) : null,
     full,
@@ -130,12 +140,39 @@ function evaluate(mandate: Mandate, need: Need, product: Product, quote: QuoteLi
 
 /** With a reference product the tiers lead. For a plain search there are no tiers, so what the agent may order alone leads. */
 const compare = (hasReference: boolean) => (a: Evaluated, b: Evaluated) =>
-  (hasReference ? a.tier - b.tier : RANK[a.decision] - RANK[b.decision]) ||
+  (hasReference ? a.tier - b.tier || b.closeness - a.closeness : RANK[a.decision] - RANK[b.decision]) ||
   (a.pricePerUnit ?? Infinity) - (b.pricePerUnit ?? Infinity) ||
   (b.product.deliveryReliability ?? -1) - (a.product.deliveryReliability ?? -1) ||
   a.product.id.localeCompare(b.product.id);
 
 const brandOf = (p: Product) => p.brand?.trim() || p.vendor;
+
+/** The words of one name that say what the product is, in order: no brand, no sizes, no short words. */
+function nameWords(p: Product, name: string | null): string[] {
+  const brand = new Set(`${p.brand ?? ""} ${p.vendor}`.toLowerCase().split(/[^\p{L}]+/u));
+  const words = (name ?? "").toLowerCase().split(/[^\p{L}\p{N}]+/u);
+  return [...new Set(words.filter((w) => w.length >= 4 && !/\p{N}/u.test(w) && !brand.has(w)))];
+}
+// "filee" matches "rintafilee", "fillet" matches "breastfillet", "kanan" matches "kananpojan"
+const sameWord = (a: string, b: string) => a.includes(b) || b.includes(a);
+
+/**
+ * How close each candidate's name is to the asked-for product's, 0 to 1. A category code is broad (chicken fillets and
+ * thighs share one), so inside it the name decides the order. A product name starts with what the product is and ends
+ * with how it is prepared or packed ("Kanan Filee Miedosti Suolattu"), so each word counts half as much as the one
+ * before it: sharing "filee" matters more than sharing "suolattu". The Finnish and the English name are both used.
+ * This only orders the options: it never makes one allowed.
+ */
+function closenessTo(reference: Product, candidates: Product[]): number[] {
+  const weighted = [reference.nameFi, reference.nameEn].flatMap((name) => nameWords(reference, name).map((word, i) => ({ word, weight: 0.5 ** i })));
+  const all = weighted.reduce((sum, w) => sum + w.weight, 0);
+  if (!all) return candidates.map(() => 0);
+  return candidates.map((c) => {
+    const theirs = [...nameWords(c, c.nameFi), ...nameWords(c, c.nameEn)];
+    const shared = weighted.reduce((sum, w) => sum + (theirs.some((x) => sameWord(x, w.word)) ? w.weight : 0), 0);
+    return Math.round((shared / all) * 10) / 10;
+  });
+}
 
 function part(e: Evaluated, quantity: number, deliveryDate: string): OptionPart {
   const p = e.product;
@@ -152,6 +189,8 @@ function part(e: Evaluated, quantity: number, deliveryDate: string): OptionPart 
     origin: p.origin,
     labels: p.labels,
     allergenDataKnown: p.allergenDataKnown,
+    requirements: e.properties.requirements,
+    requirementNotes: e.properties.notes,
   };
 }
 
@@ -356,6 +395,7 @@ export async function buildOptions(mandate: Mandate, needs: Need[], deliveryDate
     const { start, products } = spans[i];
     const evals = products.map((p, j) => evaluate(mandate, need, p, quoted!.lines[start + j]));
     const reference = need.reference ? (need.referenceQuote ? evaluate(mandate, need, need.reference, need.referenceQuote) : evals.shift()!) : null;
+    if (need.reference) closenessTo(need.reference, evals.map((e) => e.product)).forEach((c, k) => (evals[k].closeness = c));
     return { need, reference, candidates: evals };
   });
 

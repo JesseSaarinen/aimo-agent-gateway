@@ -71,6 +71,8 @@ function offeredPart(l: OfferLine, deliveryDate: string): OptionPart | null {
     origin: l.claims.origin,
     labels: l.claims.labels,
     allergenDataKnown: l.claims.allergenDataKnown,
+    requirements: l.claims.requirements,
+    requirementNotes: l.claims.requirementNotes ?? [], // offers stored before Sat 14 Nov 11:00 have none
   };
 }
 

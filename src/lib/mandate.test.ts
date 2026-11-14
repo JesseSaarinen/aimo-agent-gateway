@@ -65,7 +65,16 @@ describe("mandate rules", () => {
 
   it("rules 3 and 5: a claim is yes, milk is no, and missing data is unknown and goes to approval", async () => {
     const m = await getMandate(DEMO_MANDATE_ID); // requires lactose_free
-    expect(checkProperties(m, product("472673"))).toEqual({ requirements: { lactose_free: "yes" }, findings: [] });
+    // Kariniemen fillet: no allergen table, but Valio's data carries the free-from-lactose claim. The note says both,
+    // so an agent does not read "no allergen data" as "not confirmed" (a real agent did, on Sat 14 Nov).
+    expect(checkProperties(m, product("472673"))).toEqual({
+      requirements: { lactose_free: "yes" },
+      notes: ["Lactose-free: yes (Valio Aimo's product data carries this claim; there is no allergen table)"],
+      findings: [],
+    });
+    expect(checkProperties(m, product("462281")).notes).toEqual(["Lactose-free: unknown (the product data can't confirm it; there is no allergen table). Unknown is not yes."]);
+    expect(checkProperties(m, product("469648")).notes).toEqual(["Lactose-free: no (from Valio Aimo's product data)"]);
+    expect(checkProperties(m, product("467366")).notes).toEqual(["Lactose-free: yes (from Valio Aimo's allergen data)"]);
     expect(checkProperties(m, product("462281")).findings).toMatchObject([{ rule: "missing_allergen_data", decision: "needs_approval" }]);
     expect(checkProperties(m, product("469648")).findings).toMatchObject([{ rule: "required_properties", decision: "blocked" }]);
     // The agent can ask for more than the mandate does

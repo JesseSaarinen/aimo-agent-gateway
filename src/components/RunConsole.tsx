@@ -4,12 +4,16 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { Step } from "@/app/api/demo/runs/script";
-import { fmtDay } from "@/lib/dates";
+import { fmtDateTime, fmtDay } from "@/lib/dates";
 import type { RunId } from "@/lib/demo";
 import { api, TONE, type Tone } from "./client";
 
 type Start = { kind: "start"; run: RunId; title: string; ask: string; deliveryDate: string };
-type Info = { runs: Record<RunId, { title: string; ask: string; human: boolean }>; defaultDeliveryDate: string };
+type Info = {
+  runs: Record<RunId, { title: string; ask: string; human: boolean }>;
+  defaultDeliveryDate: string;
+  orderWindow: { deliveryDate: string; open: boolean; closes: string | null } | null;
+};
 
 const ORDER: RunId[] = ["milk", "menu", "big", "dead-end", "break-it"];
 
@@ -170,6 +174,23 @@ export function RunConsole() {
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="mt-1 rounded border border-line bg-sheet px-2 py-1.5" />
         </label>
       </div>
+
+      {info?.orderWindow && !info.orderWindow.open && (
+        <div role="status" className="mt-4 rounded border border-wait bg-wait-bg px-4 py-3">
+          <p className="font-bold text-wait">Valio Aimo is no longer taking orders for {fmtDay(info.orderWindow.deliveryDate)}</p>
+          <p className="mt-1 text-[15px]">
+            {info.orderWindow.closes ? `The order cut-off was ${fmtDateTime(info.orderWindow.closes)}. ` : ""}
+            Valio Aimo&apos;s mock data has one delivery slot, and its cut-off is the same for every delivery date. So the runs below now end in a refusal that
+            names the cut-off. That is the gateway keeping to the cut-off, not a fault: an agent can&apos;t order what Valio Aimo can no longer deliver.
+          </p>
+        </div>
+      )}
+      {info?.orderWindow?.open && info.orderWindow.closes && (
+        <p className="mt-3 text-sm text-soft">
+          Valio Aimo takes orders for {fmtDay(info.orderWindow.deliveryDate)} until {fmtDateTime(info.orderWindow.closes)}. After that the gateway refuses them
+          and says why.
+        </p>
+      )}
 
       {problem && (
         <p role="alert" className="mt-4 rounded border border-stop bg-stop-bg px-4 py-3 text-stop">

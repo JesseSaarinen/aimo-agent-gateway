@@ -65,6 +65,29 @@ describe("options for a named product", () => {
     expect(r.notOffered[0]).toMatchObject({ productId: "462281", reason: "Only 198 KG in stock for Mon 16 Nov, need 228.8" });
   });
 
+  it("options say what the data says about the required properties, and where that comes from", async () => {
+    const r = await find({ productId: "463232", amount: 225, unit: "KG" });
+    expect(r.options[0].parts[0]).toMatchObject({
+      productId: "472673",
+      allergenDataKnown: false,
+      requirements: { lactose_free: "yes" },
+      requirementNotes: ["Lactose-free: yes (Valio Aimo's product data carries this claim; there is no allergen table)"],
+    });
+  });
+
+  // Seen with a real agent on Sat 14 Nov: for a chicken breast fillet the gateway offered two cheaper thighs.
+  it("inside a product group the closer name comes first: a breast fillet before a cheaper thigh", async () => {
+    fakeValio.setStock("462281", 999999); // Kariniemen breast fillet, 10.20 EUR/kg
+    fakeValio.addProduct("467814", { unit: "KG", price: 7.13, per: [7.13, "KG"], model: "Stock", stock: 999999 }); // Kariniemen boneless thigh
+    fakeValio.addProduct("463553", { unit: "KG", price: 7.48, per: [7.48, "KG"], model: "Stock", stock: 999999 }); // Kariniemen thigh escalope
+    fakeValio.fixSchedule(MONDAY); // no later date, as on the live API, so all three slots are products
+    const r = await find({ productId: "463232", amount: 225, unit: "KG" }); // Atria chicken fillet
+    expect(ids(r)).toEqual(["product:472673", "product:462281", "product:467814"]);
+    expect(r.options.map((o) => o.relation)).toEqual(["listed_substitute", "same_group_other_brand", "same_group_other_brand"]);
+    // The order changed, the decisions did not: every same-group product still needs the purchaser
+    expect(r.options.map((o) => o.decision)).toEqual(["needs_approval", "needs_approval", "needs_approval"]);
+  });
+
   it("the product itself is option 1 when it can simply be ordered", async () => {
     const r = await find({ productId: "465039", amount: 1000, unit: "L" });
     expect(r.options[0]).toMatchObject({ kind: "product", relation: "requested", decision: "allowed", total: 1690 });

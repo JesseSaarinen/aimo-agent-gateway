@@ -1,6 +1,7 @@
 import { connection } from "next/server";
 import { DEMO_BUYER, demoKeys } from "@/lib/agents";
 import { defaultDeliveryDate, MENU, RUNS } from "@/lib/demo";
+import { orderWindow } from "@/lib/order-window";
 import { storeKind } from "@/lib/store";
 import { TOOLS } from "@/lib/tools";
 import { usingFakeValio, valioSource } from "@/lib/valio";
@@ -19,6 +20,8 @@ export async function GET() {
     runs: RUNS,
     menu: MENU,
     defaultDeliveryDate: defaultDeliveryDate(),
+    // Whether Valio still takes orders for that date (one Valio call at most every five minutes)
+    orderWindow: await orderWindow(),
     data: { source: valioSource(), fake: usingFakeValio(), store: storeKind() },
   });
 }

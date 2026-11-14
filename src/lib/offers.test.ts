@@ -28,6 +28,7 @@ describe("request_offer", () => {
       nutritionClaims: ["HIGH_PROTEIN"],
       allergenDataKnown: false,
       requirements: { lactose_free: "unknown" },
+      requirementNotes: ["Lactose-free: unknown (the product data can't confirm it; there is no allergen table). Unknown is not yes."],
     });
     expect(offer.lines[0]).toMatchObject({ decision: "needs_approval", findings: [{ rule: "missing_allergen_data" }] });
   });

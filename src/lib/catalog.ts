@@ -81,6 +81,32 @@ function allergenFree(p: Product, codes: string[]): Verdict {
   return p.allergenDataKnown ? "yes" : "unknown";
 }
 
+const CLAIM_FOR: Partial<Record<Requirement, string[]>> = {
+  lactose_free: ["FREE_FROM_LACTOSE"],
+  gluten_free: ["FREE_FROM_GLUTEN"],
+  egg_free: ["FREE_FROM_EGGS"],
+  soy_free: ["FREE_FROM_SOY"],
+  vegan: ["VEGAN"],
+  vegetarian: ["VEGETARIAN", "VEGAN"],
+};
+
+/**
+ * The verdict on a requirement as one sentence that also says where it comes from, e.g.
+ * "Lactose-free: yes (the product data carries a free-from claim; there is no allergen table)".
+ * An agent that only sees "no allergen data" would otherwise read a claimed product as unconfirmed.
+ */
+export function requirementNote(p: Product, r: Requirement): string {
+  const verdict = checkRequirement(p, r);
+  const label = REQUIREMENTS[r];
+  const table = p.allergenDataKnown ? "" : "; there is no allergen table";
+  if (verdict === "yes") {
+    if (CLAIM_FOR[r]?.some((c) => p.claims.includes(c))) return `${label}: yes (Valio Aimo's product data carries this claim${table})`;
+    return `${label}: yes (from Valio Aimo's ${p.allergenDataKnown && r !== "organic" && r !== "finnish" ? "allergen data" : "product data"})`;
+  }
+  if (verdict === "no") return `${label}: no (from Valio Aimo's product data)`;
+  return `${label}: unknown (the product data can't confirm it${table}). Unknown is not yes.`;
+}
+
 export function checkRequirement(p: Product, r: Requirement): Verdict {
   switch (r) {
     case "lactose_free":
