@@ -67,7 +67,7 @@ Routes (`src/app/`):
 Pages (`src/app/`, client components in `src/components/`):
 - `/`: the pitch line and the demo runs (`RunConsole`). `/purchaser`: inbox, mandate form, log (`PurchaserDesk`, `OrderDocket`, `AuditLog`), polls every 3 s.
 - `/aimo`: Valio Aimo's read-only order book and log. `/verify`: paste an offer, change one character; checked by the gateway and in the browser. `/connect`: MCP address, tools, REST routes.
-- Look: Schibsted Grotesk, cold white and navy, and three verdict colours (`globals.css`). No dark mode.
+- Look: in Valio Aimo's family, read from valioaimo.fi on Sat 14 Nov: petrol blue `#005670` (the token is still called `teal`), lime `#c0e021` for the one main action on a page, near-black text, 2px corners, page titles in Barlow Condensed capitals, body in Schibsted Grotesk, three verdict colours (`globals.css`). Colours and shapes only: no logo, image or font of theirs. No dark mode.
 
 Tests (`npm test`, all on fake data): `src/lib/*.test.ts`. `attacks.test.ts` is the break-it run, one test per attack. `src/test/setup.ts` fixes the clock to Sat 14 Nov 08:00 and blocks the network.
 

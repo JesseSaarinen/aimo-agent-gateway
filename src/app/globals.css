@@ -1,15 +1,19 @@
 @import "tailwindcss";
 
-/* One deliberate look, light only: a cold-room white, navy ink, and three verdict colours.
-   The verdict (confirmed / waits / stopped) is the only thing on a page that is allowed to shout. */
+/* One deliberate look, light only, in Valio Aimo's family (read from valioaimo.fi on Sat 14 Nov 2026): petrol blue,
+   a lime accent for the one main action, near-black text, almost square corners and a condensed capital headline.
+   Colours and shapes only: no logo, image or font of theirs is used. "teal" is the petrol blue.
+   The verdict (confirmed / waits / stopped) is still the only thing on a page that is allowed to shout. */
 @theme inline {
-  --color-paper: #f1f5f4;
+  --color-paper: #f2f7f8;
   --color-sheet: #ffffff;
-  --color-ink: #13233a;
-  --color-soft: #52627a;
-  --color-line: #d3dcda;
-  --color-teal: #0b6b66;
-  --color-teal-deep: #084f4b;
+  --color-ink: #23282d;
+  --color-soft: #55616b;
+  --color-line: #d4dee2;
+  --color-teal: #005670;
+  --color-teal-deep: #003f52;
+  --color-lime: #c0e021;
+  --color-lime-deep: #a8c614;
   --color-go: #1b7a45;
   --color-go-bg: #e4f3ea;
   --color-wait: #9a5a00;
@@ -18,12 +22,29 @@
   --color-stop-bg: #fce7e4;
   --font-sans: var(--font-schibsted), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-display: var(--font-barlow-condensed), var(--font-schibsted), ui-sans-serif, sans-serif;
 }
 
 body {
   background: var(--color-paper);
   color: var(--color-ink);
   font-family: var(--font-sans);
+}
+
+/* Page titles: condensed capitals, like a wholesaler's price board. */
+h1 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.005em;
+  line-height: 1;
+  color: var(--color-teal);
+}
+
+/* Almost square corners everywhere. */
+.rounded,
+.rounded-sm {
+  border-radius: 2px;
 }
 
 :focus-visible {

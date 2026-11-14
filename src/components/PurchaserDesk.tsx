@@ -71,7 +71,7 @@ function MandatePanel({ view, onSaved }: { view: MandateView; onSaved: () => voi
           <p className="text-sm text-soft">
             This week since {fmtDay(view.week.from)}: {money(view.week.ordered)} ordered, {money(view.week.left)} left.
           </p>
-          <button type="submit" disabled={!changed || saving} className="rounded border border-teal bg-teal px-3 py-1.5 text-sm font-semibold text-white hover:bg-teal-deep disabled:cursor-not-allowed disabled:opacity-50">
+          <button type="submit" disabled={!changed || saving} className="rounded border border-lime bg-lime text-teal-deep hover:bg-lime-deep px-3 py-1.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50">
             Save limits
           </button>
         </div>

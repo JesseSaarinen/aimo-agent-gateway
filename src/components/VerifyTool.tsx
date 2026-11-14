@@ -129,7 +129,7 @@ export function VerifyTool() {
         className="mt-1 w-full rounded border border-line bg-sheet p-3 font-mono text-xs leading-relaxed"
       />
       <div className="mt-2 flex flex-wrap items-center gap-2">
-        <button type="button" className={`${button} border-teal bg-teal text-white hover:bg-teal-deep`} disabled={busy || !token.trim()} onClick={() => verify(token)}>
+        <button type="button" className={`${button} border-lime bg-lime text-teal-deep hover:bg-lime-deep font-bold`} disabled={busy || !token.trim()} onClick={() => verify(token)}>
           Verify
         </button>
         <button type="button" className={`${button} border-stop bg-sheet text-stop hover:bg-stop-bg`} disabled={busy || !token.trim()} onClick={tamper}>

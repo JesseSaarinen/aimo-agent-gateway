@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Schibsted_Grotesk } from "next/font/google";
+import { Barlow_Condensed, Geist_Mono, Schibsted_Grotesk } from "next/font/google";
 import { Shell } from "@/components/Shell";
 import "./globals.css";
 
 const schibsted = Schibsted_Grotesk({ variable: "--font-schibsted", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+const barlowCondensed = Barlow_Condensed({ variable: "--font-barlow-condensed", subsets: ["latin"], weight: ["700", "800"] });
 
 export const metadata: Metadata = {
   title: { default: "Aimo Agent Gateway", template: "%s | Aimo Agent Gateway" },
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${schibsted.variable} ${geistMono.variable} h-full antialiased`}>
+    <html lang="en" className={`${schibsted.variable} ${geistMono.variable} ${barlowCondensed.variable} h-full antialiased`}>
       <body className="min-h-full">
         <Shell>{children}</Shell>
       </body>

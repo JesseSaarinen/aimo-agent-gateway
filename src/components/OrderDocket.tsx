@@ -31,7 +31,7 @@ export const Chip = ({ tone, children }: { tone: Tone; children: React.ReactNode
 );
 
 const button = "rounded border px-3 py-1.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50";
-const primary = `${button} border-teal bg-teal text-white hover:bg-teal-deep`;
+const primary = `${button} border-lime bg-lime text-teal-deep hover:bg-lime-deep font-bold`;
 const quiet = `${button} border-line bg-sheet text-ink hover:border-ink`;
 
 function OptionRow({ option, onTake, busy }: { option: Option; onTake?: () => void; busy: boolean }) {

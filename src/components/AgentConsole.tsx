@@ -135,7 +135,7 @@ export function AgentConsole() {
             className="mt-1 w-full rounded border border-line bg-sheet px-3 py-2 text-base"
           />
         </label>
-        <button type="submit" disabled={running || text.trim().length < 3} className="rounded bg-teal px-4 py-2.5 font-semibold text-white hover:bg-teal-deep disabled:cursor-not-allowed disabled:opacity-60">
+        <button type="submit" disabled={running || text.trim().length < 3} className="rounded bg-lime text-teal-deep hover:bg-lime-deep px-4 py-2.5 font-bold disabled:cursor-not-allowed disabled:opacity-60">
           {running ? "Working…" : "Ask the agent"}
         </button>
       </form>

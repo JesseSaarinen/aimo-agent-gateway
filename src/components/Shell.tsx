@@ -23,9 +23,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="border-b border-line bg-sheet">
+      <header className="bg-teal text-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-baseline gap-x-8 gap-y-2 px-5 py-4">
-          <Link href="/" className="text-lg font-extrabold tracking-tight">
+          <Link href="/" className="font-display text-2xl font-extrabold uppercase leading-none tracking-wide">
             Aimo Agent Gateway
           </Link>
           <nav aria-label="Main" className="flex flex-wrap gap-x-5 gap-y-1 text-[15px]">
@@ -36,7 +36,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
                   key={n.href}
                   href={n.href}
                   aria-current={here ? "page" : undefined}
-                  className={here ? "border-b-2 border-teal pb-0.5 font-semibold text-ink" : "border-b-2 border-transparent pb-0.5 text-soft hover:text-ink"}
+                  className={here ? "border-b-2 border-lime pb-0.5 font-semibold text-white" : "border-b-2 border-transparent pb-0.5 text-white/80 hover:text-white"}
                 >
                   {n.label}
                 </Link>
