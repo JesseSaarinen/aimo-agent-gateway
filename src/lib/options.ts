@@ -1,9 +1,10 @@
 // Ranked options for something the buyer needs: used by find_options and for every exception line in an offer.
 // The ranking happens here on the server, so every agent gets the same answer:
 //   1. a substitute Valio Aimo itself lists for the product
-//   2. the same type and brand
-//   3. the same type, another brand
+//   2. the same product group and brand
+//   3. the same product group, another brand
 //   then the lower price per unit, and delivery reliability breaks ties.
+// Only 1 can pass without a person: 2 and 3 share a category code, which is no proof that the product fits.
 // A split (what is in stock, the rest from the best substitute) and the same product on its first possible
 // later date are added when they apply. If nothing can be delivered, the answer says so. It never guesses.
 import { getProduct, productName, productsInCategory, REQUIREMENTS, searchProducts, type Product, type Requirement } from "./catalog";
@@ -34,7 +35,7 @@ export type OptionPart = {
   allergenDataKnown: boolean;
 };
 
-export type Relation = "requested" | "listed_substitute" | "same_type_same_brand" | "same_type_other_brand" | "other_type" | "search_match";
+export type Relation = "requested" | "listed_substitute" | "same_group_same_brand" | "same_group_other_brand" | "other_type" | "search_match";
 
 export type Option = {
   rank: number;
@@ -83,7 +84,7 @@ type Evaluated = {
   whyNot: string | null;
 };
 
-const TIER: Record<Relation, number> = { requested: 0, listed_substitute: 1, same_type_same_brand: 2, same_type_other_brand: 3, other_type: 4, search_match: 1 };
+const TIER: Record<Relation, number> = { requested: 0, listed_substitute: 1, same_group_same_brand: 2, same_group_other_brand: 3, other_type: 4, search_match: 1 };
 const RANK: Record<Decision, number> = { allowed: 0, needs_approval: 1, blocked: 2 };
 
 function evaluate(mandate: Mandate, need: Need, product: Product, quote: QuoteLine): Evaluated {
@@ -98,8 +99,8 @@ function evaluate(mandate: Mandate, need: Need, product: Product, quote: QuoteLi
         : !rel.sameType
           ? "other_type"
           : rel.sameBrand
-            ? "same_type_same_brand"
-            : "same_type_other_brand";
+            ? "same_group_same_brand"
+            : "same_group_other_brand";
   const findings = [
     ...checkProperties(mandate, product, need.requirements).findings,
     ...(need.reference && !isReference ? checkSubstitution(mandate, need.reference, product) : []),
@@ -161,10 +162,10 @@ function relationText(e: Evaluated, reference: Product | null): string {
       return "The product that was asked for";
     case "listed_substitute":
       return `Valio Aimo lists it as a substitute for ${ref}${relationOf(reference!, e.product).sameBrand ? "" : `; another brand (${brandOf(e.product)})`}`;
-    case "same_type_same_brand":
-      return `Same type and brand as ${ref}`;
-    case "same_type_other_brand":
-      return `Same type as ${ref}, another brand (${brandOf(e.product)})`;
+    case "same_group_same_brand":
+      return `Same product group and brand as ${ref}; not a substitute Valio Aimo lists`;
+    case "same_group_other_brand":
+      return `Same product group as ${ref}, another brand (${brandOf(e.product)}); not a substitute Valio Aimo lists`;
     case "other_type":
       return `Another product type than ${ref}`;
     case "search_match":
@@ -298,7 +299,7 @@ function compose(need: Need, deliveryDate: string, reference: Evaluated | null, 
   const message = options.length
     ? `${options.length} option${options.length === 1 ? "" : "s"} for ${what}, best first. ${checked} product${checked === 1 ? "" : "s"} checked.`
     : checked === 0
-      ? `Nothing can be delivered for ${what}: no product of the same type was found. The gateway does not guess a replacement.`
+      ? `Nothing can be delivered for ${what}: no product of the same product group was found. The gateway does not guess a replacement.`
       : `Nothing can be delivered for ${what}: ${checked} product${checked === 1 ? "" : "s"} checked, ${whyNothing(all) || "none usable"}. The gateway does not guess a replacement.`;
   return { options, possible: options.length > 0, message, notOffered, checked };
 }

@@ -46,7 +46,8 @@ describe("request_offer", () => {
       [2, "later_date", "463232", "needs_approval"],
     ]);
     expect(noData.quantity).toBe(101.2); // 23 lots of 4.4 kg
-    expect(noData.options[0]).toMatchObject({ kind: "product", relation: "same_type_same_brand", decision: "allowed", parts: [{ productId: "472673" }] });
+    // Same brand and product group, but not a pair Valio lists: the purchaser decides
+    expect(noData.options[0]).toMatchObject({ kind: "product", relation: "same_group_same_brand", decision: "needs_approval", parts: [{ productId: "472673" }] });
     expect(milk.options).toEqual([]);
     expect(offer.total).toBe(2722.24); // blocked lines are not in the total
     expect(offer.decision).toBe("needs_approval");

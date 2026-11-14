@@ -37,7 +37,7 @@ export const productCount = products.length;
 export const productName = (p: Product) => p.nameEn ?? p.nameFi ?? p.id;
 
 let byCategory: Map<string, Product[]> | null = null;
-/** All products with the same category code, e.g. 18750 = chicken fillets. "Same type" in the mandate means this. */
+/** All products with the same category code, e.g. 18750 = chicken fillets and thighs. The mandate calls this the same product group. */
 export function productsInCategory(category: string): Product[] {
   if (!byCategory) {
     byCategory = new Map();

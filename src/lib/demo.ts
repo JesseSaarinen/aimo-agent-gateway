@@ -52,7 +52,7 @@ export const MENU = {
 
 export const RUNS = {
   milk: { title: "Milk run", ask: "1,000 l of lactose-free milk by the delivery date", human: false },
-  menu: { title: "Menu run", ask: `${MENU.title}: ${MENU.dish.toLowerCase()}`, human: true },
+  menu: { title: "Menu run", ask: `${MENU.title}: ${MENU.dish[0].toLowerCase()}${MENU.dish.slice(1)}`, human: true },
   big: { title: "Order over the limit", ask: `${BIG_MILK_AMOUNT.toLocaleString("en-US")} l of lactose-free milk, more than one order may cost`, human: true },
   "dead-end": { title: "Where it breaks", ask: "12 boxes of grated carrot, past its cut-off and with no substitute that makes the date", human: false },
   "break-it": { title: "Break-it run", ask: "A rogue agent tries eight ways around the rules", human: false },

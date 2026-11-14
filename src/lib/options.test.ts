@@ -57,10 +57,11 @@ describe("options for a named product", () => {
     expect(split.reason).toContain("198 KG of Kariniemen Chicken breastfillet natural");
   });
 
-  it("too little stock of the asked-for product: same-brand substitute alone, or a split", async () => {
+  it("too little stock of the asked-for product: the brand's other fillet for the purchaser to confirm, or a split", async () => {
     const r = await find({ productId: "462281", amount: 225, unit: "KG" });
     expect(ids(r)).toEqual(["product:472673", "split:462281+472673"]);
-    expect(r.options[0]).toMatchObject({ relation: "same_type_same_brand", decision: "allowed" });
+    expect(r.options[0]).toMatchObject({ relation: "same_group_same_brand", decision: "needs_approval" });
+    expect(r.options[0].reason).toContain("Same product group and brand as Kariniemen Chicken breastfillet natural 160-185g/appr 4,4 kg; not a substitute Valio Aimo lists");
     expect(r.notOffered[0]).toMatchObject({ productId: "462281", reason: "Only 198 KG in stock for Mon 16 Nov, need 228.8" });
   });
 

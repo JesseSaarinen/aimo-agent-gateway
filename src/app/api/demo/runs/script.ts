@@ -247,7 +247,7 @@ async function* deadEndRun(deliveryDate: string): AsyncGenerator<Step> {
     verdict: found.json.possible ? "ok" : "blocked",
     says: found.json.possible
       ? "Stock has changed since this run was written: there is an option now."
-      : "The listed substitute can't be delivered and nothing of the same type makes the date, so the agent is told exactly that. It is not handed some other vegetable.",
+      : "The listed substitute can't be delivered and nothing in the same product group makes the date, so the agent is told exactly that. It is not handed some other vegetable.",
   });
 }
 

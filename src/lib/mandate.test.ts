@@ -72,13 +72,33 @@ describe("mandate rules", () => {
     expect(checkProperties(m, product("472673"), ["organic"]).findings).toMatchObject([{ rule: "required_properties", decision: "blocked" }]);
   });
 
-  it("rule 4: same brand passes alone, another brand asks, another type is never allowed", async () => {
+  it("rule 4: a listed substitute of the same brand passes alone, another brand asks, another type is never allowed", async () => {
     const m = await getMandate(DEMO_MANDATE_ID);
-    expect(checkSubstitution(m, product("462281"), product("472673"))).toEqual([]); // both Kariniemen chicken fillets
+    expect(checkSubstitution(m, product("467366"), product("474752"))).toEqual([]); // SallaCarte diced tomato 1 kg -> 9 x 1 kg, listed by Valio
     const [brand] = checkSubstitution(m, product("463232"), product("472673")); // Atria -> Kariniemen, Valio's listed substitute
     expect(brand).toMatchObject({ rule: "substitution", decision: "needs_approval" });
     expect(brand.reason).toContain("another brand (Kariniemen)");
     expect(checkSubstitution(m, product("463232"), product("465039"))).toMatchObject([{ rule: "substitution", decision: "blocked" }]); // chicken -> milk
+  });
+
+  // Seen on live stock on Sat 14 Nov 2026: one category code holds diced tomato and shredded cabbage.
+  it("rule 4: sharing the product group is not enough to pass alone, even for the same brand", async () => {
+    const m = await getMandate(DEMO_MANDATE_ID);
+    const cabbage = checkSubstitution(m, product("467366"), product("467530")); // SallaCarte diced tomato -> SallaCarte shredded cabbage
+    expect(cabbage).toEqual([
+      {
+        rule: "substitution",
+        decision: "needs_approval",
+        reason: "SallaCarte Cabbage shredded 1 kg is in the same product group as SallaCarte Tomato diced 1 kg, but Valio Aimo does not list it as a substitute",
+      },
+    ]);
+    const [fillet] = checkSubstitution(m, product("462281"), product("472673")); // two Kariniemen chicken fillets, not a listed pair
+    expect(fillet).toMatchObject({ rule: "substitution", decision: "needs_approval" });
+    const [thigh] = checkSubstitution(m, product("464786"), product("472673")); // another brand as well
+    expect(thigh.reason).toContain("does not list it as a substitute, and it is another brand (Kariniemen)");
+    // A mandate can be stricter than "ask", never looser
+    const strict = { ...m, substitutions: { ...m.substitutions, sameTypeSameBrand: "blocked" as const } };
+    expect(checkSubstitution(strict, product("467366"), product("467530"))).toMatchObject([{ decision: "blocked" }]);
   });
 });
 

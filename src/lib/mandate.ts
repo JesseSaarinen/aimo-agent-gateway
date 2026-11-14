@@ -5,7 +5,8 @@
 //   1. Max EUR per order and a weekly budget      -> over either: needs approval
 //   2. Delivery sites and the latest delivery date -> outside: blocked
 //   3. Required product properties                 -> product fails one: blocked
-//   4. Substitutions                               -> same type and brand: alone; other brand: ask; other type: never
+//   4. Substitutions                               -> a substitute Valio lists, same brand: alone; other brand: ask;
+//                                                     only the same product group: always ask; other type: never
 //   5. Missing allergen data                       -> always ask
 //   6. Order cut-off passed                        -> blocked (the offer lists alternatives)
 import { actorOf, DEMO_BUYER, DEMO_MANDATE_ID, getBuyer, requireRole, type Caller } from "./agents";
@@ -95,7 +96,7 @@ export function describeMandate(m: Mandate): string[] {
     m.requiredProperties.length
       ? `Every product must be: ${m.requiredProperties.map((r) => REQUIREMENTS[r]).join(", ")}.`
       : "No product properties are required.",
-    `Substitutes: same type and brand: ${act[m.substitutions.sameTypeSameBrand]}; another brand: ${act[m.substitutions.otherBrand]}; another product type: ${act[m.substitutions.otherType]}.`,
+    `Substitutes that Valio Aimo lists for a product: same brand: ${act[m.substitutions.sameTypeSameBrand]}; another brand: ${act[m.substitutions.otherBrand]}. A product that only shares the product group: the purchaser must approve. Another product type: ${act[m.substitutions.otherType]}.`,
     "A product without allergen data always needs the purchaser's approval when an allergen property is required.",
     "A product whose order cut-off has passed can't be ordered for that date. The gateway lists alternatives instead.",
   ];
@@ -159,7 +160,11 @@ export function checkProperties(m: Mandate, p: Product, extra: Requirement[] = [
 // Rule 4
 const norm = (s: string) => s.trim().toLowerCase();
 
-/** How a substitute relates to the product it replaces. "Same type" = same category code, or Valio lists it as a substitute. */
+/**
+ * How a substitute relates to the product it replaces. `listed`: Valio names it as a substitute. `sameType`: listed, or the
+ * same category code. A category is a product group, not a product: on live stock one code holds diced tomato and shredded
+ * cabbage (17443), another salmon and saithe (18701). So only a listed substitute counts as like-for-like.
+ */
 export function relationOf(original: Product, substitute: Product) {
   const listed = original.substitutes.includes(substitute.id); // Valio's own pairs are one-way
   const sameType = listed || original.category === substitute.category;
@@ -173,11 +178,16 @@ const brandOf = (p: Product) => p.brand?.trim() || p.vendor;
 export function checkSubstitution(m: Mandate, original: Product, substitute: Product): Finding[] {
   if (original.id === substitute.id) return [];
   const rel = relationOf(original, substitute);
-  const [decision, why]: [Decision, string] = !rel.sameType
+  let [decision, why]: [Decision, string] = !rel.sameType
     ? [m.substitutions.otherType, `is another product type than ${productName(original)}`]
     : rel.sameBrand
       ? [m.substitutions.sameTypeSameBrand, `is the same type and brand as ${productName(original)}`]
       : [m.substitutions.otherBrand, `is another brand (${brandOf(substitute)}) than ${productName(original)} (${brandOf(original)})`];
+  // Sharing a product group is not proof that it fits, so a person decides. The mandate can be stricter, never looser.
+  if (rel.sameType && !rel.listed) {
+    if (decision === "allowed") decision = "needs_approval";
+    why = `is in the same product group as ${productName(original)}, but Valio Aimo does not list it as a substitute${rel.sameBrand ? "" : `, and it is another brand (${brandOf(substitute)})`}`;
+  }
   return decision === "allowed" ? [] : [{ rule: "substitution", decision, reason: `${productName(substitute)} ${why}` }];
 }
 
