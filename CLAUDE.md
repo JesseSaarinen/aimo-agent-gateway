@@ -5,14 +5,14 @@ The plan, judging criteria and API/data findings are in `../valio-aimo.md`. Read
 
 @AGENTS.md
 
-## Status (Sat 14 Nov 10:10)
+## Status (Sat 14 Nov 11:00)
 
 Built: the order engine (offers, mandate, signing, orders, approvals, audit log, REST, MCP) and the pages (demo runs with the break-it run, purchaser's desk, Valio Aimo's view, verify, connect).
-Live: https://aimo-agent-gateway.vercel.app runs this code on the live Valio API and the Neon database (last deployed Sat 14 Nov 10:06; `/api/health` says `postgres (production)`).
+Live: https://aimo-agent-gateway.vercel.app runs this code on the live Valio API and the Neon database (last deployed Sat 14 Nov 10:57; `/api/health` says `postgres (production)`).
 Checked on the live site on Sat 14 Nov: milk run confirmed with no human, break-it run 8 of 8 stopped, menu run with both purchaser decisions, `/aimo`, `/verify`, `/connect`, and MCP (initialize, tools/list, one tool call). After the second deploy (10:06): the 25 scripted calls that never reach Valio, the milk run, the break-it run and the menu run again. The demo data was reset afterwards.
 Committed locally on `master`. Nothing is pushed: the repo has no remote.
 Not built: the in-app agent console with a language model. The scripted runs page is the plan's own fallback for it.
-Not tested: a real agent (Claude Desktop or Claude Code) on the MCP address. Only scripted MCP calls have run.
+A real agent has run it: on Sat 14 Nov Jesse ordered the milk and a three-line menu from Claude Desktop over MCP, decided the two open lines on the purchaser's desk, and the agent reported the result. What that showed is fixed in commits `6f53cab` and `4eea2ba` (keep exception lines in the placed offer, property verdicts with their source, name-based ranking, everyday unit words). Claude Desktop reads the tool texts when the connector is added: remove and re-add it after changing them.
 
 ## What the live Valio API does (seen Sat 14 Nov)
 
@@ -38,13 +38,14 @@ The order engine (`src/lib/`):
 - `rules.ts`: the name of every rule the gateway can cite, `Decision` (allowed, needs_approval, blocked), `Finding`, and `Refusal` (a final "no" with rule, reason and audit id)
 - `agents.ts`: the demo buyer (Lumikello Hotels, made up), its sites, and the four demo keys: two agents, the purchaser, Valio Aimo's read-only view. `requireCaller` and `requireRole` refuse and log.
 - `mandate.ts`: the six mandate rules as check functions, the seeded mandate, `updateMandate` (purchaser only). Rule 4: a listed substitute of the same brand passes alone, another brand asks, a product that only shares the category always asks, another category is never allowed.
-- `options.ts`: `find_options` and the three options on an exception line. Ranking, split, later date, and the caps on Valio calls.
+- `options.ts`: `find_options` and the three options on an exception line. Ranking (listed substitute, then same product group by how close the name is, then price), split, later date, and the caps on Valio calls.
 - `offers.ts`: `requestOffer` builds a multi-line offer at fixed prices (30 min) with per-line decision, findings, options and product claims
 - `signing.ts`: Ed25519 signing and verifying of offers with `jose`. Key from `OFFER_SIGNING_KEY`, or generated at start-up outside production.
 - `orders.ts`: `placeOrder` (verifies the offer, re-checks mandate and stock, one order per offer) and `decideLine` (approve, reject, pick an option)
 - `spend.ts`: confirmed spend this week, for the weekly budget
 - `audit.ts`: the audit log. `store.ts`: the only storage (get, put, putIfAbsent, list, clear). Postgres (Neon, one JSONB table `aimo_docs`, rows kept apart per environment) when `DATABASE_URL` is set, memory otherwise and always on fake data.
 - `rule-names.ts`: the rule names alone, with no imports, so pages can use them. `demo.ts`: what the demo runs ask for (milk request, menu basket, the over-the-limit amount, the dead-end product, default delivery date). Tuned on live data on Sat 14 Nov.
+- `order-window.ts`: whether Valio still takes orders for the demo's delivery date (one cached Valio call per five minutes). The demo page shows it, and explains the refusals once the cut-off has passed.
 - `tools.ts`: the six agent tools defined once (name, description, zod schema, handler), plus the MCP server instructions. REST and MCP both run these.
 - `openapi.ts`: the REST API as an OpenAPI 3.1 document, built from `schemas.ts` and the tool texts. `openapi.test.ts` fails when a route under `src/app/api/v1` is missing from it.
 - `schemas.ts`: zod input schemas. `http.ts`: key from the request (bearer key, or the demo sign-in cookie plus an `X-Demo-Role` header) and refusal → HTTP status. `dates.ts`: Helsinki dates and the budget week.
