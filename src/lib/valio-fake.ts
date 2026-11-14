@@ -51,6 +51,8 @@ const ROWS: Record<string, Row> = {
   // Staples that are simply available
   "472332": { unit: "ST", price: 11.9, per: [2.38, "KG"], model: "Stock", stock: UNLIMITED }, // basmati rice 5 kg
   "467239": { unit: "ST", price: 4.2, per: [4.2, "KG"], model: "Stock", stock: UNLIMITED }, // cucumber cubes 1 kg
+  "475644": { unit: "ST", price: 3.83, per: [1.53, "KG"], model: "Stock", stock: UNLIMITED }, // baby carrots, frozen, 2.5 kg (menu run)
+  "464306": { unit: "ST", price: 1.01, per: [1.01, "L"], model: "Stock", stock: UNLIMITED }, // Arki Eila 1 l (menu run)
   "473237": { unit: "ST", price: 2.95, per: [9.83, "KG"], model: "Stock", stock: UNLIMITED }, // salad mix 300 g
   "462080": { unit: "BOT", price: 6.4, per: [6.4, "L"], model: "Stock", stock: UNLIMITED }, // lemon vinaigrette 1 l
   "460453": { unit: "PAK", price: 1.85, per: [2.31, "KG"], model: "Stock", stock: UNLIMITED }, // sea salt 800 g

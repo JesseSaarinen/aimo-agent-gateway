@@ -28,19 +28,22 @@ export const SALMON_REQUEST = { productId: "461814", amount: 40, unit: "KG" };
  * The menu run's draft basket: weekly lunch for 5 hotels, about 1,500 portions.
  * In the real flow the buyer's agent breaks the menu down and the purchaser can edit this draft;
  * the gateway only ever sees the basket. Each line carries the assumption the agent would list.
- * NOT YET TUNED ON LIVE DATA: chosen on fake data so that five lines pass alone and two stop.
+ * Tuned on live data on Sat 14 Nov 2026 for delivery Mon 16 Nov: five lines pass alone and two stop.
+ *   - the chicken (a Terminal product) is past its cut-off, and Valio's listed substitute is another brand;
+ *   - the Parmesan has no allergen data, so "lactose-free" can't be confirmed.
+ * The other five are Stock products with allergen data and enough stock. Mock stock changes: `/api/demo/check` re-checks this.
  */
 export const MENU = {
   title: "Weekly lunch for 5 hotels, about 1,500 portions",
-  dish: "Chicken breast with rice, a cucumber salad and Parmesan",
+  dish: "Chicken breast with rice, baby carrots, a green salad and Parmesan",
   lines: [
     { ingredient: "Chicken breast fillet", assumption: "150 g per portion", productId: "463232", amount: 225, unit: "KG" },
     { ingredient: "Parmesan", assumption: "about 3 g per portion, 125 g pieces", productId: "463968", amount: 40, unit: "ST" },
     { ingredient: "Basmati rice", assumption: "200 g per portion, 5 kg bags", productId: "472332", amount: 60, unit: "ST" },
-    { ingredient: "Cucumber, diced", assumption: "about 50 g per portion", productId: "467239", amount: 80, unit: "KG" },
+    { ingredient: "Baby carrots", assumption: "100 g per portion, frozen, 2.5 kg bags", productId: "475644", amount: 150, unit: "KG" },
     { ingredient: "Salad mix", assumption: "20 g per portion, 300 g bags", productId: "473237", amount: 100, unit: "ST" },
     { ingredient: "Lemon vinaigrette", assumption: "20 ml per portion", productId: "462080", amount: 30, unit: "L" },
-    { ingredient: "Lactose-free milk for coffee", assumption: "200 l for the week", productId: "465039", amount: 200, unit: "L" },
+    { ingredient: "Lactose-free milk for coffee", assumption: "200 l for the week", productId: "464306", amount: 200, unit: "L" },
   ],
 };
 
