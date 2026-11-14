@@ -52,6 +52,40 @@ const Code = ({ children }: { children: string }) => (
   </div>
 );
 
+// What stands in for something in this demo, and what would replace it: [part, in this demo, in production].
+const PRODUCTION: [string, string, string][] = [
+  [
+    "Agent identity",
+    "A fixed demo key per agent, sent as a bearer key or inside the MCP address.",
+    "OAuth 2.1 as the MCP specification describes: one client per agent, which the buyer can issue and revoke.",
+  ],
+  [
+    "Buyer and purchaser",
+    "One made-up hotel chain. No login: anyone can be its demo purchaser.",
+    "Valio Aimo's customers sign in. Each buyer sets its own mandate, and only its purchasers can change it.",
+  ],
+  [
+    "Orders",
+    "Kept in the gateway's own order book. Valio Aimo's mock API has no order endpoint.",
+    "A confirmed order is passed on to Valio Aimo's order system. The order book stays as the record of who decided what, and why.",
+  ],
+  [
+    "Prices and stock",
+    "Valio Aimo's mock price and availability API, read for every offer. Stock is checked again when the order is placed.",
+    "The same two calls against Valio Aimo's production API.",
+  ],
+  [
+    "Signing key",
+    "One Ed25519 key in an environment variable. Its public half is at /.well-known/jwks.json.",
+    "A key held in a key management service and rotated. Every offer already names the key that signed it.",
+  ],
+  [
+    "Load",
+    "Calls to Valio Aimo are capped per request: an offer makes at most 7, an order 1.",
+    "The same caps, plus a rate limit per agent.",
+  ],
+];
+
 export function ConnectInfo() {
   const [info, setInfo] = useState<Info | null>(null);
   const [origin, setOrigin] = useState("");
@@ -152,6 +186,38 @@ export function ConnectInfo() {
         <p className="mt-3 text-sm text-soft">
           Delivery sites of {info.buyer.name}: {info.buyer.sites.map((s) => s.id).join(", ")}.
         </p>
+      </section>
+
+      <section id="production" aria-labelledby="production-heading" className="mt-10">
+        <h2 id="production-heading" className="text-xl font-bold">
+          From demo to production
+        </h2>
+        <p className="mt-1 max-w-3xl text-soft">
+          Built for a hackathon on Valio Aimo&apos;s mock API. This is what stands in for something today, and what would replace it. The six tools, the
+          mandate check on every order, the signed offers and the log would stay as they are.
+        </p>
+        <div className="mt-4 rounded border border-line bg-sheet text-sm">
+          <div aria-hidden="true" className="hidden gap-x-5 border-b border-line px-3 py-2 font-medium text-soft sm:grid sm:grid-cols-[9rem_1fr_1fr]">
+            <span />
+            <span>In this demo</span>
+            <span>In production</span>
+          </div>
+          <ul>
+            {PRODUCTION.map(([part, demo, production]) => (
+              <li key={part} className="grid gap-x-5 gap-y-1 border-b border-line px-3 py-2.5 last:border-0 sm:grid-cols-[9rem_1fr_1fr]">
+                <h3 className="font-semibold">{part}</h3>
+                <p>
+                  <span className="text-soft sm:sr-only">In this demo: </span>
+                  {demo}
+                </p>
+                <p>
+                  <span className="text-soft sm:sr-only">In production: </span>
+                  {production}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
       </section>
     </>
   );
