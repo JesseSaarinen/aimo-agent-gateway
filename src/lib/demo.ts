@@ -1,0 +1,54 @@
+// What the demo runs ask for. Tune the products here when live data changes; nothing else depends on them.
+import type { Requirement } from "./catalog";
+import { addDays, helsinkiDate, TZ } from "./dates";
+
+/**
+ * The delivery date a demo run asks for when none is given: tomorrow before 15:00 Helsinki time, otherwise
+ * the day after, moved past the weekend. On Sat 14 and Sun 15 Nov (before 15:00) that is Mon 16 Nov.
+ */
+export function defaultDeliveryDate(now = new Date()): string {
+  const hour = Number(new Intl.DateTimeFormat("en-GB", { timeZone: TZ, hour: "2-digit", hour12: false }).format(now));
+  let date = addDays(helsinkiDate(now), hour < 15 ? 1 : 2);
+  while ([0, 6].includes(new Date(`${date}T00:00:00Z`).getUTCDay())) date = addDays(date, 1);
+  return date;
+}
+
+export const DEMO_SITE = "helsinki";
+
+/** The brief's own example: "1,000 l lactose-free milk by Monday". */
+export const MILK_REQUEST = { query: "maito laktoositon", amount: 1000, unit: "L", requirements: ["lactose_free"] as Requirement[] };
+
+/** Big enough to cross the seeded 5,000 EUR order limit, for the raise-the-limit moment. */
+export const BIG_MILK_AMOUNT = 4000;
+
+/** "Where it breaks": salmon fillet, unavailable and with no substitute in the catalogue. */
+export const SALMON_REQUEST = { productId: "461814", amount: 40, unit: "KG" };
+
+/**
+ * The menu run's draft basket: weekly lunch for 5 hotels, about 1,500 portions.
+ * In the real flow the buyer's agent breaks the menu down and the purchaser can edit this draft;
+ * the gateway only ever sees the basket. Each line carries the assumption the agent would list.
+ * NOT YET TUNED ON LIVE DATA: chosen on fake data so that five lines pass alone and two stop.
+ */
+export const MENU = {
+  title: "Weekly lunch for 5 hotels, about 1,500 portions",
+  dish: "Chicken breast with rice, a cucumber salad and Parmesan",
+  lines: [
+    { ingredient: "Chicken breast fillet", assumption: "150 g per portion", productId: "463232", amount: 225, unit: "KG" },
+    { ingredient: "Parmesan", assumption: "about 3 g per portion, 125 g pieces", productId: "463968", amount: 40, unit: "ST" },
+    { ingredient: "Basmati rice", assumption: "200 g per portion, 5 kg bags", productId: "472332", amount: 60, unit: "ST" },
+    { ingredient: "Cucumber, diced", assumption: "about 50 g per portion", productId: "467239", amount: 80, unit: "KG" },
+    { ingredient: "Salad mix", assumption: "20 g per portion, 300 g bags", productId: "473237", amount: 100, unit: "ST" },
+    { ingredient: "Lemon vinaigrette", assumption: "20 ml per portion", productId: "462080", amount: 30, unit: "L" },
+    { ingredient: "Lactose-free milk for coffee", assumption: "200 l for the week", productId: "465039", amount: 200, unit: "L" },
+  ],
+};
+
+export const RUNS = {
+  milk: { title: "Milk run", ask: "1,000 l of lactose-free milk by the delivery date", human: false },
+  menu: { title: "Menu run", ask: `${MENU.title}: ${MENU.dish.toLowerCase()}`, human: true },
+  big: { title: "Order over the limit", ask: `${BIG_MILK_AMOUNT.toLocaleString("en-US")} l of lactose-free milk, more than one order may cost`, human: true },
+  salmon: { title: "Where it breaks", ask: "40 kg of salmon fillet, which is not in stock and has no substitute", human: false },
+  "break-it": { title: "Break-it run", ask: "A rogue agent tries eight ways around the rules", human: false },
+} as const;
+export type RunId = keyof typeof RUNS;

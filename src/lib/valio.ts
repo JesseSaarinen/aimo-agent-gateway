@@ -1,7 +1,15 @@
 // Thin client for Valio Aimo's mock pricing and availability APIs.
 // Their rule: narrow down with static product data first, then query only the shortlist.
+import * as fake from "./valio-fake";
 
 const BASE = process.env.VALIO_API_BASE ?? "https://junction26.valioaimo.fi/api";
+
+// VALIO_FAKE=1 swaps the live API for the fixtures in valio-fake.ts (tests, `npm run dev:fake`).
+// It is ignored in production builds, so a deployed demo can never serve fake data by accident.
+export const usingFakeValio = () => process.env.VALIO_FAKE === "1" && process.env.NODE_ENV !== "production";
+
+export const valioSource = () =>
+  usingFakeValio() ? "FAKE Valio data (test fixtures, not the live API)" : "Valio Aimo mock API (price + availability)";
 
 function key(): string {
   const k = process.env.VALIO_API_KEY;
@@ -61,10 +69,13 @@ export type ProductPrice = {
   error: boolean;
 };
 
-export const ping = () => call<{ status: string }>("/ping");
+export type AvailabilityResponse = { timeNow: string; requestedDate: string; products: ProductAvailability[] };
+export type PriceResponse = { customerId: string; currency: string; pricingDate: string; products: ProductPrice[] };
 
-export const getAvailability = (req: ProductsRequest) =>
-  call<{ timeNow: string; requestedDate: string; products: ProductAvailability[] }>("/availability", req);
+export const ping = (): Promise<{ status: string }> => (usingFakeValio() ? fake.ping() : call("/ping"));
 
-export const getPrices = (req: ProductsRequest) =>
-  call<{ customerId: string; currency: string; pricingDate: string; products: ProductPrice[] }>("/price", req);
+export const getAvailability = (req: ProductsRequest): Promise<AvailabilityResponse> =>
+  usingFakeValio() ? fake.getAvailability(req) : call("/availability", req);
+
+export const getPrices = (req: ProductsRequest): Promise<PriceResponse> =>
+  usingFakeValio() ? fake.getPrices(req) : call("/price", req);

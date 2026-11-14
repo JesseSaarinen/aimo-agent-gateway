@@ -7,11 +7,19 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "dev:fake": "node scripts/dev-fake.mjs",
+    "create-signing-key": "node scripts/create-signing-key.mjs",
     "fetch-data": "node --env-file=.env.local scripts/fetch-data.mjs",
     "build-index": "node --env-file-if-exists=.env.local scripts/build-index.mjs",
     "prebuild": "npm run build-index"
   },
   "dependencies": {
+    "@modelcontextprotocol/server": "^2.4.0",
+    "@neondatabase/serverless": "^1.2.1",
+    "jose": "^6.2.17",
+    "mcp-handler": "^2.4.0",
     "next": "16.4.6",
     "react": "19.3.0",
     "react-dom": "19.3.0",
@@ -19,12 +27,13 @@
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "4.3.3",
-    "@types/node": "^20",
+    "@types/node": "^24.19.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
     "tailwindcss": "4.3.3",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^5.1.0"
   }
 }

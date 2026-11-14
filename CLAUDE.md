@@ -5,27 +5,77 @@ The plan, judging criteria and API/data findings are in `../valio-aimo.md`. Read
 
 @AGENTS.md
 
+## Status (Sat 14 Nov 05:30)
+
+Built: the order engine (offers, mandate, signing, orders, approvals, audit log, REST, MCP) and the pages (demo runs with the break-it run, purchaser's desk, Valio Aimo's view, verify, connect).
+Everything has only run on fake Valio data (`src/lib/valio-fake.ts`). Nothing has been tested against the live API, and nothing is committed or deployed.
+The Postgres store is written but has never run against a database. Without `DATABASE_URL` everything is kept in memory.
+Not built: the in-app agent console with a language model. The scripted runs page is the plan's own fallback for it.
+The menu basket in `src/lib/demo.ts` was chosen on fake data and still has to be tuned on live data.
+
 ## Where things are
 
-- `src/lib/valio.ts`: client for Valio Aimo's mock price and availability APIs
+Data and Valio:
+- `src/lib/valio.ts`: client for Valio Aimo's mock price and availability APIs. `VALIO_FAKE=1` swaps in the fake (ignored in production).
+- `src/lib/valio-fake.ts`: fake price, stock and cut-off data for tests and `npm run dev:fake`. Real product codes, made-up numbers.
 - `src/lib/catalog.ts`: product search and requirement checks (lactose_free, nut_free …) over the static index. A verdict is yes, no or unknown; unknown means the data can't tell.
-- `src/lib/quote.ts`: live price + availability for a shortlist, unit conversion (e.g. 1000 L → 50 KI), cut-off and stock issues
-- `src/lib/schemas.ts`: zod input schemas shared by REST and MCP
-- `src/app/api/v1/products/search` (GET) and `src/app/api/v1/quote` (POST): the REST API
+- `src/lib/quote.ts`: `quoteBasket()` prices several lines with one price call and one availability call, converts units (1000 L → 50 KI) and rounds up to the lot size. `quote()` is the older single-amount version. `checkSupply()` is the stock re-check.
 - `scripts/build-index.mjs`: data/products.json → `src/generated/products-index.json` (11.6 MB, gitignored, runs before every build)
-- `src/app/api/health`: checks that the app is up and can reach the Valio API
 - `scripts/fetch-data.mjs`: downloads the static challenge files into `data/` (`npm run fetch-data`)
 - `data/`: products.json (87 MB), reliability.csv, carbon.csv. Gitignored, so re-download it, don't commit it.
 
+The order engine (`src/lib/`):
+- `rules.ts`: the name of every rule the gateway can cite, `Decision` (allowed, needs_approval, blocked), `Finding`, and `Refusal` (a final "no" with rule, reason and audit id)
+- `agents.ts`: the demo buyer (Lumikello Hotels, made up), its sites, and the four demo keys: two agents, the purchaser, Valio Aimo's read-only view. `requireCaller` and `requireRole` refuse and log.
+- `mandate.ts`: the six mandate rules as check functions, the seeded mandate, `updateMandate` (purchaser only)
+- `options.ts`: `find_options` and the three options on an exception line. Ranking, split, later date, and the caps on Valio calls.
+- `offers.ts`: `requestOffer` builds a multi-line offer at fixed prices (30 min) with per-line decision, findings, options and product claims
+- `signing.ts`: Ed25519 signing and verifying of offers with `jose`. Key from `OFFER_SIGNING_KEY`, or generated at start-up outside production.
+- `orders.ts`: `placeOrder` (verifies the offer, re-checks mandate and stock, one order per offer) and `decideLine` (approve, reject, pick an option)
+- `spend.ts`: confirmed spend this week, for the weekly budget
+- `audit.ts`: the audit log. `store.ts`: the only storage (get, put, putIfAbsent, list, clear). Postgres (Neon, one JSONB table `aimo_docs`, rows kept apart per environment) when `DATABASE_URL` is set, memory otherwise and always on fake data.
+- `rule-names.ts`: the rule names alone, with no imports, so pages can use them. `demo.ts`: what the demo runs ask for (milk request, menu basket, default delivery date).
+- `tools.ts`: the six agent tools defined once (name, description, zod schema, handler), plus the MCP server instructions. REST and MCP both run these.
+- `schemas.ts`: zod input schemas. `http.ts`: key from the request (bearer key, or the demo sign-in cookie plus an `X-Demo-Role` header) and refusal → HTTP status. `dates.ts`: Helsinki dates and the budget week.
+
+Routes (`src/app/`):
+- `api/v1/products/search` (GET), `api/v1/quote` (POST): the first two endpoints, no key needed. `/quote` calls Valio.
+- `api/v1/options` (POST), `api/v1/offers` (POST), `api/v1/offers/[id]` (GET), `api/v1/offers/verify` (POST, public)
+- `api/v1/orders` (POST, GET), `api/v1/orders/[id]` (GET), `api/v1/orders/[id]/decisions` (POST, purchaser only)
+- `api/v1/mandate` (GET, PATCH by the purchaser), `api/v1/audit` (GET, purchaser and Valio Aimo)
+- `api/mcp/[[...key]]`: the MCP endpoint. Key as `Authorization: Bearer` or as a path segment (`/api/mcp/<agent key>`, for Claude Desktop).
+- `.well-known/jwks.json`: the public key for verifying offers
+- `api/health`: checks that the app is up and can reach the Valio API, and says which store is in use
+- `api/demo/runs`: runs a scripted demo and streams its steps. `script.ts` beside it holds the runs (milk, menu, big order, salmon, break-it). They call the real REST handlers in-process. The break-it run uses a throw-away sandbox buyer (`sbx-…`).
+- `api/demo/session` (demo sign-in cookie for the pages), `api/demo/reset` (purchaser only, clears all data), `api/demo/info` (agent key, MCP address, tools)
+- `api/demo/check` and `scripts/check-demo-data.mjs`: the demo data check. Do the menu basket and the milk run still work for a delivery date? Four Valio calls, nothing offered or logged.
+
+Pages (`src/app/`, client components in `src/components/`):
+- `/`: the pitch line and the demo runs (`RunConsole`). `/purchaser`: inbox, mandate form, log (`PurchaserDesk`, `OrderDocket`, `AuditLog`), polls every 3 s.
+- `/aimo`: Valio Aimo's read-only order book and log. `/verify`: paste an offer, change one character; checked by the gateway and in the browser. `/connect`: MCP address, tools, REST routes.
+- Look: Schibsted Grotesk, cold white and navy, and three verdict colours (`globals.css`). No dark mode.
+
+Tests (`npm test`, all on fake data): `src/lib/*.test.ts`. `attacks.test.ts` is the break-it run, one test per attack. `src/test/setup.ts` fixes the clock to Sat 14 Nov 08:00 and blocks the network.
+
 ## Run, check, deploy
 
-- Dev: the `aimo-gateway` preview config in `C:\Users\Jesse\Projects\.claude\launch.json`, on port 3300
-- Checks: `npm run lint`, `npx tsc --noEmit`, `npm run build`
+- Dev: preview config `aimo-gateway` (port 3300, live Valio API) or `aimo-gateway-fake` (port 3301, fake data, `npm run dev:fake`). Both are in this folder's `.claude/launch.json` and in `C:\Users\Jesse\Projects\.claude\launch.json`. Only one can run at a time.
+- Checks: `npm test`, `npm run lint`, `npx tsc --noEmit`, `npm run build`
+- `scripts/try-routes.mjs`: 41 scripted calls over REST and MCP against a running dev server. Run the full flow only on the fake server (3301), freshly started: a second run trips the weekly budget, as it should. `--no-valio` runs the 23 calls that never reach Valio.
+- The pages have no login: "signed in as the demo purchaser" is a cookie anyone can get. That stands in for a real login and is said on the page.
+- Demo orders add up: after about 15,000 € of confirmed orders in a week, every new order waits for approval. Use "Reset demo data" on the purchaser's desk, or raise the weekly budget, before a demo run.
 - Live: https://aimo-agent-gateway.vercel.app (Vercel project `aimo-agent-gateway`). `vercel deploy --prod --yes`.
 - Env: `VALIO_API_KEY` and `VALIO_API_BASE` in `.env.local` and on Vercel (production). Template: `.env.example`.
+- Signing key: `npm run create-signing-key` appends `OFFER_SIGNING_KEY` to `.env.local` without printing it. Production refuses to sign without it, so it must also be set on Vercel.
+- Demo keys default to fixed values in `src/lib/agents.ts` and can be overridden with `DEMO_AGENT_KEY`, `DEMO_SECOND_AGENT_KEY`, `DEMO_PURCHASER_KEY`, `DEMO_SUPPLIER_KEY`.
 
 ## Rules
 
 - Never commit `.env*` (except `.env.example`) or `data/`.
 - Valio's API rule: never poll price or availability for all products. Filter on the static product data first, then query only the shortlist (1–1000 codes per call, rate limited).
+- Valio calls are capped per request: an offer makes at most 7 (basket 2, candidates for all exception lines 2, later dates 3), `find_options` at most 5, placing an order 1, an approval 1 per delivery date.
+- The gateway never guesses: an unknown property goes to approval, and a line with no option says so.
 - Next.js 16 differs from older versions: check `node_modules/next/dist/docs/` before using an API you're unsure of.
+- `vercel.json` pins functions to `fra1` (Frankfurt), where the Neon database is said to be. Not checked against the database host.
+- A number field with `min` and `step` only accepts min + n × step: the limit field uses `step="any"` for that reason.
+- A GET route must read the request headers outside any try/catch (see `withCaller` in `http.ts`), or the build logs a prerender error.

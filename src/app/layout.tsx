@@ -1,29 +1,22 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Schibsted_Grotesk } from "next/font/google";
+import { Shell } from "@/components/Shell";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const schibsted = Schibsted_Grotesk({ variable: "--font-schibsted", subsets: ["latin"] });
+const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Aimo Agent Gateway",
-  description: "Open agent interface for Valio Aimo purchasing, Junction 2026",
+  title: { default: "Aimo Agent Gateway", template: "%s | Aimo Agent Gateway" },
+  description: "Valio Aimo's door for buying agents: any agent can ask, only the buyer's mandate can buy. A Junction 2026 demo.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="en" className={`${schibsted.variable} ${geistMono.variable} h-full antialiased`}>
+      <body className="min-h-full">
+        <Shell>{children}</Shell>
+      </body>
     </html>
   );
 }

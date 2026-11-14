@@ -34,6 +34,21 @@ const byId = new Map(products.map((p) => [p.id, p]));
 
 export const getProduct = (id: string) => byId.get(id) ?? null;
 export const productCount = products.length;
+export const productName = (p: Product) => p.nameEn ?? p.nameFi ?? p.id;
+
+let byCategory: Map<string, Product[]> | null = null;
+/** All products with the same category code, e.g. 18750 = chicken fillets. "Same type" in the mandate means this. */
+export function productsInCategory(category: string): Product[] {
+  if (!byCategory) {
+    byCategory = new Map();
+    for (const p of products) {
+      const list = byCategory.get(p.category);
+      if (list) list.push(p);
+      else byCategory.set(p.category, [p]);
+    }
+  }
+  return byCategory.get(category) ?? [];
+}
 
 // GS1 allergen codes used in the data
 export const ALLERGENS: Record<string, string> = {
