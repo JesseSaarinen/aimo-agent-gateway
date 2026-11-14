@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "dev:fake": "node scripts/dev-fake.mjs",
+    "dev:db": "node scripts/dev-db.mjs",
     "create-signing-key": "node scripts/create-signing-key.mjs",
     "fetch-data": "node --env-file=.env.local scripts/fetch-data.mjs",
     "build-index": "node --env-file-if-exists=.env.local scripts/build-index.mjs",

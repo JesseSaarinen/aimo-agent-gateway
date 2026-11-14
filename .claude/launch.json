@@ -4,14 +4,38 @@
     {
       "name": "aimo-gateway",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--", "-p", "3300"],
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "-p",
+        "3300"
+      ],
       "port": 3300
     },
     {
       "name": "aimo-gateway-fake",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev:fake", "--", "-p", "3301"],
+      "runtimeArgs": [
+        "run",
+        "dev:fake",
+        "--",
+        "-p",
+        "3301"
+      ],
       "port": 3301
+    },
+    {
+      "name": "aimo-gateway-db",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev:db",
+        "--",
+        "-p",
+        "3302"
+      ],
+      "port": 3302
     }
   ]
 }

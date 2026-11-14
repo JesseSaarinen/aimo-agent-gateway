@@ -65,7 +65,7 @@ const memoryStore: Store = {
 
 /**
  * One table for everything. `ns` keeps environments apart in a shared database (production, preview, local).
- * NOT YET RUN AGAINST A REAL DATABASE: written on Sat 14 Nov before the connection string was available.
+ * Checked against the real Neon database on Sat 14 Nov 2026 with `scripts/check-store.mjs` (10 checks).
  */
 function postgresStore(url: string, ns: string): Store {
   const sql = neon(url);
