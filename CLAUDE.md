@@ -5,13 +5,13 @@ The plan, judging criteria and API/data findings are in `../valio-aimo.md`. Read
 
 @AGENTS.md
 
-## Status (Sat 14 Nov 11:00)
+## Status (Sat 14 Nov 11:30)
 
 Built: the order engine (offers, mandate, signing, orders, approvals, audit log, REST, MCP) and the pages (demo runs with the break-it run, purchaser's desk, Valio Aimo's view, verify, connect).
-Live: https://aimo-agent-gateway.vercel.app runs this code on the live Valio API and the Neon database (last deployed Sat 14 Nov 10:57; `/api/health` says `postgres (production)`).
+Live: https://aimo-agent-gateway.vercel.app runs this code on the live Valio API and the Neon database (last deployed Sat 14 Nov 11:24; `/api/health` says `postgres (production)`).
 Checked on the live site on Sat 14 Nov: milk run confirmed with no human, break-it run 8 of 8 stopped, menu run with both purchaser decisions, `/aimo`, `/verify`, `/connect`, and MCP (initialize, tools/list, one tool call). After the second deploy (10:06): the 25 scripted calls that never reach Valio, the milk run, the break-it run and the menu run again. The demo data was reset afterwards.
 Committed locally on `master`. Nothing is pushed: the repo has no remote.
-Not built: the in-app agent console with a language model. The scripted runs page is the plan's own fallback for it.
+The in-app agent console is live at `/agent` (built Sat 14 Nov): a language model with the demo agent's key and the six tools. On the live site it ordered the milk and had a Stockholm order refused; the menu request was run locally only. It runs on `google/gemini-2.5-flash`, because the AI Gateway's free tier allows no Claude model. With paid credits on the Vercel team, set `AGENT_MODEL` (for example `anthropic/claude-sonnet-5.5`) on Vercel and redeploy.
 A real agent has run it: on Sat 14 Nov Jesse ordered the milk and a three-line menu from Claude Desktop over MCP, decided the two open lines on the purchaser's desk, and the agent reported the result. What that showed is fixed in commits `6f53cab` and `4eea2ba` (keep exception lines in the placed offer, property verdicts with their source, name-based ranking, everyday unit words). Claude Desktop reads the tool texts when the connector is added: remove and re-add it after changing them.
 
 ## What the live Valio API does (seen Sat 14 Nov)
@@ -46,6 +46,7 @@ The order engine (`src/lib/`):
 - `audit.ts`: the audit log. `store.ts`: the only storage (get, put, putIfAbsent, list, clear). Postgres (Neon, one JSONB table `aimo_docs`, rows kept apart per environment) when `DATABASE_URL` is set, memory otherwise and always on fake data.
 - `rule-names.ts`: the rule names alone, with no imports, so pages can use them. `demo.ts`: what the demo runs ask for (milk request, menu basket, the over-the-limit amount, the dead-end product, default delivery date). Tuned on live data on Sat 14 Nov.
 - `order-window.ts`: whether Valio still takes orders for the demo's delivery date (one cached Valio call per five minutes). The demo page shows it, and explains the refusals once the cut-off has passed.
+- `agent-console.ts`: the in-app agent (AI SDK 7 `ToolLoopAgent` on Vercel's AI Gateway), its three preset requests and its limits: one run at a time per instance, 150 runs a day, 12 steps a run.
 - `tools.ts`: the six agent tools defined once (name, description, zod schema, handler), plus the MCP server instructions. REST and MCP both run these.
 - `openapi.ts`: the REST API as an OpenAPI 3.1 document, built from `schemas.ts` and the tool texts. `openapi.test.ts` fails when a route under `src/app/api/v1` is missing from it.
 - `schemas.ts`: zod input schemas. `http.ts`: key from the request (bearer key, or the demo sign-in cookie plus an `X-Demo-Role` header) and refusal → HTTP status. `dates.ts`: Helsinki dates and the budget week.
@@ -58,6 +59,7 @@ Routes (`src/app/`):
 - `api/mcp/[[...key]]`: the MCP endpoint. Key as `Authorization: Bearer` or as a path segment (`/api/mcp/<agent key>`, for Claude Desktop).
 - `.well-known/jwks.json`: the public key for verifying offers
 - `api/health`: checks that the app is up and can reach the Valio API, and says which store is in use
+- `api/demo/agent`: POST runs the in-app agent on one message and streams its tool calls, the gateway's answers and its words; GET lists the presets. Page: `/agent` (`AgentConsole`).
 - `api/demo/runs`: runs a scripted demo and streams its steps. `script.ts` beside it holds the runs (milk, menu, big order, dead-end, break-it). They call the real REST handlers in-process. The break-it run uses a throw-away sandbox buyer (`sbx-…`).
 - `api/demo/session` (demo sign-in cookie for the pages), `api/demo/reset` (purchaser only, clears all data), `api/demo/info` (agent key, MCP address, tools)
 - `api/demo/check` and `scripts/check-demo-data.mjs`: the demo data check. Do the menu basket and the milk run still work for a delivery date? Four Valio calls, nothing offered or logged.
@@ -92,6 +94,7 @@ Tests (`npm test`, all on fake data): `src/lib/*.test.ts`. `attacks.test.ts` is 
 - The gateway never guesses: an unknown property goes to approval, and a line with no option says so.
 - Next.js 16 differs from older versions: check `node_modules/next/dist/docs/` before using an API you're unsure of.
 - `vercel.json` pins functions to `fra1` (Frankfurt). The Neon database is in AWS `eu-central-1` (Frankfurt), read from the database host on Sat 14 Nov.
+- The AI Gateway signs in with `VERCEL_OIDC_TOKEN`: automatic on Vercel, and locally `npm run dev:db` passes the one from `.env.vercel` (it runs out after some hours; pull again). `node --env-file=.env.vercel scripts/try-models.mjs <model ids>` shows which models the team may call. The AI SDK changes often: read `node_modules/ai/docs/` before touching `agent-console.ts`.
 - Next.js refuses `node --env-file=…` in front of `next dev` ("not allowed in NODE_OPTIONS"): pass extra variables through a launcher script like `scripts/dev-db.mjs`.
 - Adding a product to `valio-fake.ts` can change what the milk search finds in the tests, because the search runs on the real catalogue and the fake only supplies prices and stock.
 - A number field with `min` and `step` only accepts min + n × step: the limit field uses `step="any"` for that reason.
